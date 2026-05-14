@@ -40,7 +40,18 @@ public class AgentService : IAgentService
     {
         var apiKey = config["OpenAI__ApiKey"]
             ?? throw new InvalidOperationException("OpenAI API key not configured.");
-        _client = new ChatClient(config["OpenAI__Model"] ?? "gpt-4o", apiKey);
+        var model = config["OpenAI__Model"] ?? "gpt-4o";
+        var baseUrl = config["OpenAI__BaseUrl"];
+
+        if (!string.IsNullOrEmpty(baseUrl))
+        {
+            var options = new OpenAIClientOptions { Endpoint = new Uri(baseUrl) };
+            _client = new ChatClient(model, new System.ClientModel.ApiKeyCredential(apiKey), options);
+        }
+        else
+        {
+            _client = new ChatClient(model, apiKey);
+        }
     }
 
     public async Task<string> GetResponseAsync(string agentType, List<ChatMessage> history, string userMessage)
