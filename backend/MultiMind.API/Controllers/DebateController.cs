@@ -31,12 +31,43 @@ public class DebateController : ControllerBase
         if (request.Prompt.Length > 4000)
             return BadRequest(new { message = "Prompt exceeds maximum length of 4000 characters." });
 
+        // Epic 11.6 — Block prompt injection patterns
+        if (ContainsInjectionPattern(request.Prompt))
+            return BadRequest(new { message = "Input contains disallowed content." });
+
         var userId = GetUserId();
         if (userId == Guid.Empty)
             return Unauthorized();
 
-        var session = await _debateEngine.RunDebateAsync(userId, request.Prompt);
+        // Create session immediately and run debate in background so the client can poll
+        var session = await _debateEngine.CreateSessionAsync(userId, request.Prompt);
+
+        _ = Task.Run(async () =>
+        {
+            try { await _debateEngine.RunDebateAsync(session.Id, userId, request.Prompt); }
+            catch { /* errors are recorded in session.Status = "failed" */ }
+        });
+
         return Ok(new { sessionId = session.Id });
+    }
+
+    // Epic 11.6 — Basic prompt injection safeguard
+    private static bool ContainsInjectionPattern(string prompt)
+    {
+        var lower = prompt.ToLowerInvariant();
+        string[] patterns = [
+            "ignore previous instructions",
+            "ignore all instructions",
+            "disregard your",
+            "you are now",
+            "act as an ai",
+            "jailbreak",
+            "do anything now",
+            "forget your instructions",
+            "new personality",
+            "override your"
+        ];
+        return patterns.Any(p => lower.Contains(p));
     }
 
     [HttpGet("{sessionId}")]

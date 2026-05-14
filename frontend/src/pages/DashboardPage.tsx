@@ -17,7 +17,7 @@ export default function DashboardPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (submittingRef.current) return; // prevent double submission
+    if (submittingRef.current) return;
     setError('');
 
     if (!prompt.trim()) {
@@ -29,16 +29,17 @@ export default function DashboardPage() {
       return;
     }
 
-    // Debounce: prevent rapid re-submissions
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       submittingRef.current = true;
       setLoading(true);
       try {
         const res = await startDebate(prompt);
+        // Navigate immediately — session page polls for results
         navigate(`/session/${res.data.sessionId}`);
-      } catch {
-        setError('Failed to start debate. Please try again.');
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        setError(msg || 'Failed to start debate. Please try again.');
       } finally {
         setLoading(false);
         submittingRef.current = false;
@@ -61,7 +62,7 @@ export default function DashboardPage() {
       <main className="dashboard-main">
         <h2>Submit a Decision</h2>
         <p className="subtitle">
-          Three AI agents — Strategist, Risk Analyst, and Engineer — will independently 
+          Three AI agents — Strategist, Risk Analyst, and Engineer — will independently
           evaluate your decision and debate it across structured rounds.
         </p>
 
@@ -77,7 +78,7 @@ export default function DashboardPage() {
           <div className="char-count">{prompt.length} / {MAX_LENGTH}</div>
           {error && <p className="error">{error}</p>}
           <button type="submit" disabled={loading || !prompt.trim()} className="btn-primary">
-            {loading ? 'Running debate...' : 'Start Debate'}
+            {loading ? 'Submitting...' : 'Start Debate'}
           </button>
         </form>
 
@@ -88,7 +89,7 @@ export default function DashboardPage() {
 }
 
 function HistorySection() {
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<{ id: string; originalPrompt: string; status: string }[]>([]);
   const [loaded, setLoaded] = useState(false);
   const navigate = useNavigate();
 

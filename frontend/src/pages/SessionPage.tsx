@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSession } from '../api/debate';
 import type { DebateSessionDto, AgentResponseDto } from '../api/debate';
@@ -10,21 +10,60 @@ const AGENT_COLORS: Record<string, string> = {
   Moderator: '#a64ff7',
 };
 
+const POLL_INTERVAL_MS = 4000;
+
 export default function SessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<DebateSessionDto | null>(null);
   const [error, setError] = useState('');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
-    getSession(sessionId)
-      .then((res) => setSession(res.data))
-      .catch(() => setError('Failed to load session.'));
+
+    const fetchSession = async () => {
+      try {
+        const res = await getSession(sessionId);
+        setSession(res.data);
+        if (res.data.status !== 'running') {
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      } catch {
+        setError('Failed to load session.');
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
+    };
+
+    fetchSession();
+    pollRef.current = setInterval(fetchSession, POLL_INTERVAL_MS);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [sessionId]);
 
   if (error) return <div className="page-error">{error}</div>;
-  if (!session) return <div className="loading">Loading debate results...</div>;
+
+  if (!session || session.status === 'running') {
+    return (
+      <div className="loading-debate">
+        <div className="spinner" />
+        <h2>Debate in progress...</h2>
+        <p>Three AI agents are debating your decision across 2 rounds.</p>
+        <p className="loading-sub">This takes around 30–60 seconds. Hang tight.</p>
+      </div>
+    );
+  }
+
+  if (session.status === 'failed') {
+    return (
+      <div className="page-error">
+        <p>The debate failed to complete. Please go back and try again.</p>
+        <button onClick={() => navigate('/dashboard')} className="btn-primary">Back to Dashboard</button>
+      </div>
+    );
+  }
 
   return (
     <div className="session-page">

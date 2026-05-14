@@ -38,7 +38,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        var allowedOrigins = new List<string> { "http://localhost:5173" };
+
+        // Allow Railway / production frontend URL if configured
+        var frontendUrl = builder.Configuration["Frontend__Url"];
+        if (!string.IsNullOrEmpty(frontendUrl))
+            allowedOrigins.Add(frontendUrl);
+
+        policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -70,6 +77,10 @@ if (app.Environment.IsDevelopment())
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Health check for Railway / Docker
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+
 app.MapControllers();
 
 app.Run();
