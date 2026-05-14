@@ -1,0 +1,6 @@
+@MultiMind.API_HostAddress = http://localhost:5125
+
+GET {{MultiMind.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

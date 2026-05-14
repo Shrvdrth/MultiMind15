@@ -1,0 +1,10 @@
+STORY 2.1 — User Registration API
+
+As a user, I want to register so that I can securely access the system.
+
+Acceptance Criteria
+User email must be unique
+Password hashed using BCrypt
+Validation for email/password required
+User stored in PostgreSQL
+Error returned for duplicate email

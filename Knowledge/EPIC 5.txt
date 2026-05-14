@@ -1,0 +1,11 @@
+STORY 5.1 — Isolated Memory Per Agent
+
+As a system, I want each agent to have independent memory.
+each agent has separate history
+no shared memory in Round 1
+separate conversation arrays
+
+Example:
+strategistHistory[]
+riskHistory[]
+engineerHistory[]

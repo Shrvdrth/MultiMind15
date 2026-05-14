@@ -1,0 +1,9 @@
+EPIC 11 — Cost Control, Performance & Security
+
+As a system, I want protection against abuse, runaway costs, and malicious inputs so that the AI pipeline is safe and sustainable.
+
+Stories:
+11.3 — Response Caching & Debouncing
+11.4 — Session Budget Mechanism
+11.5 — AI Call Logging
+11.6 — Input Validation & Prompt Injection Safeguards

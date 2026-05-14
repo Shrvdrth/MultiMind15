@@ -1,0 +1,9 @@
+STORY 1.1 — Setup Monorepo Structure
+
+As a developer, I want a monorepo setup so that frontend and backend are organized in one place.
+
+Acceptance Criteria
+
+Root repository created
+frontend/backend folders created
+basic README added

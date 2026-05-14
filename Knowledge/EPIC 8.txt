@@ -1,0 +1,5 @@
+STORY 8.1 — Configure PostgreSQL Database
+Acceptance Criteria
+PostgreSQL connection established
+Connection string managed via environment variables
+EF Core configured

@@ -1,0 +1,39 @@
+appsettings.Development.json# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Secrets - never commit real credentials
+backend/MultiMind.API/appsettings.Development.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+*.pid

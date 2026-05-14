@@ -1,0 +1,3 @@
+STORY 10.1 — GitHub Actions Setup
+
+As a developer, I want automated build pipeline.

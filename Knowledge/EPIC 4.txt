@@ -1,0 +1,9 @@
+STORY 4.1 — Define AI Agents
+
+As a system, I want multiple agents so that different perspectives are generated.
+
+Strategist agent
+Risk Analyst agent
+Engineer agent
+each uses unique system prompt
+each behaves independently

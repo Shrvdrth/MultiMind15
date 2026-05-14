@@ -1,0 +1,8 @@
+STORY 6.1 — Collect Agent Outputs
+
+As a system, I want to collect all agent responses for synthesis.
+moderator receives:
+
+original input
+all rounds
+all agent responses
