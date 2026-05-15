@@ -30,6 +30,15 @@ export interface HistoryItem {
   originalPrompt: string;
   status: string;
   createdAt: string;
+  isFavourite: boolean;
+}
+
+export interface DebateStats {
+  total: number;
+  completed: number;
+  failed: number;
+  favourites: number;
+  avgConfidence: number;
 }
 
 export const startDebate = (prompt: string) =>
@@ -38,5 +47,16 @@ export const startDebate = (prompt: string) =>
 export const getSession = (sessionId: string) =>
   api.get<DebateSessionDto>(`/debate/${sessionId}`);
 
-export const getHistory = () =>
-  api.get<HistoryItem[]>('/debate/history');
+export const getHistory = (search?: string, status?: string) => {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (status) params.set('status', status);
+  const qs = params.toString();
+  return api.get<HistoryItem[]>(`/debate/history${qs ? `?${qs}` : ''}`);
+};
+
+export const getStats = () =>
+  api.get<DebateStats>('/debate/stats');
+
+export const toggleFavourite = (sessionId: string) =>
+  api.put<{ isFavourite: boolean }>(`/debate/${sessionId}/favourite`);

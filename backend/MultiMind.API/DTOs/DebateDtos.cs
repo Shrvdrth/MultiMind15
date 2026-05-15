@@ -18,5 +18,7 @@ public record DebateSessionDto(
     string OriginalPrompt,
     string Status,
     List<DebateRoundDto> Rounds,
-    ModeratorSynthesisDto? Synthesis
+    ModeratorSynthesisDto? Synthesis,
+    bool IsFavourite = false,
+    DateTime? CreatedAt = null
 );

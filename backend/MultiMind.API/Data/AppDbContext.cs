@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
             e.HasIndex(u => u.Email).IsUnique();
             e.Property(u => u.Email).IsRequired().HasMaxLength(256);
             e.Property(u => u.PasswordHash).IsRequired();
+            e.Property(u => u.DisplayName).HasMaxLength(100).HasDefaultValue("");
         });
 
         modelBuilder.Entity<DebateSession>(e =>

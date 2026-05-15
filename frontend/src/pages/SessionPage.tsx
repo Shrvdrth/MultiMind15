@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSession } from '../api/debate';
+import { getSession, toggleFavourite } from '../api/debate';
 import type { DebateSessionDto, AgentResponseDto } from '../api/debate';
 import AnalyticsPanel from '../components/AnalyticsPanel';
 
@@ -25,6 +25,8 @@ export default function SessionPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<DebateSessionDto | null>(null);
   const [error, setError] = useState('');
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -33,6 +35,9 @@ export default function SessionPage() {
       try {
         const res = await getSession(sessionId);
         setSession(res.data);
+        if ((res.data as any).isFavourite !== undefined) {
+          setIsFavourite((res.data as any).isFavourite);
+        }
         if (res.data.status !== 'running') {
           if (pollRef.current) clearInterval(pollRef.current);
         }
@@ -88,9 +93,23 @@ export default function SessionPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `multimind-debate-${session.sessionId.slice(0, 8)}.json`;
+    a.download = `multimind-debate-${session!.sessionId.slice(0, 8)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleFav = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await toggleFavourite(sessionId);
+      setIsFavourite(res.data.isFavourite);
+    } catch {}
+  };
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   return (
@@ -98,7 +117,19 @@ export default function SessionPage() {
       <header className="session-header">
         <button onClick={() => navigate('/dashboard')} className="btn-ghost">← Back</button>
         <h1>Debate Results</h1>
-        <span className={`status status-${session.status}`}>{session.status}</span>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            className={`fav-btn-session${isFavourite ? ' active' : ''}`}
+            onClick={handleFav}
+            title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            {isFavourite ? '★' : '☆'} {isFavourite ? 'Saved' : 'Save'}
+          </button>
+          <button className="btn-ghost" onClick={copyLink}>
+            {linkCopied ? '✓ Copied!' : '🔗 Share'}
+          </button>
+          <span className={`status status-${session.status}`}>{session.status}</span>
+        </div>
       </header>
 
       {/* Prompt */}

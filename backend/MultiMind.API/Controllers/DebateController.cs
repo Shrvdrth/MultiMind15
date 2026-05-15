@@ -102,30 +102,78 @@ public class DebateController : ControllerBase
                 session.Synthesis.ConfidenceScore,
                 session.Synthesis.KeyDissentingViewpoints,
                 session.Synthesis.FullSynthesis
-            )
+            ),
+            session.IsFavourite,
+            session.CreatedAt
         );
 
         return Ok(dto);
     }
 
     [HttpGet("history")]
-    public async Task<IActionResult> GetHistory()
+    public async Task<IActionResult> GetHistory([FromQuery] string? search, [FromQuery] string? status)
     {
         var userId = GetUserId();
 
-        var sessions = await _db.DebateSessions
-            .Where(s => s.UserId == userId)
-            .OrderByDescending(s => s.CreatedAt)
+        var query = _db.DebateSessions.Where(s => s.UserId == userId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(s => s.OriginalPrompt.ToLower().Contains(search.ToLower()));
+
+        if (!string.IsNullOrWhiteSpace(status) && status != "all")
+            query = query.Where(s => s.Status == status);
+
+        var sessions = await query
+            .OrderByDescending(s => s.IsFavourite)
+            .ThenByDescending(s => s.CreatedAt)
             .Select(s => new
             {
                 s.Id,
                 s.OriginalPrompt,
                 s.Status,
-                s.CreatedAt
+                s.CreatedAt,
+                s.IsFavourite
             })
             .ToListAsync();
 
         return Ok(sessions);
+    }
+
+    [HttpPut("{sessionId}/favourite")]
+    public async Task<IActionResult> ToggleFavourite(Guid sessionId)
+    {
+        var userId = GetUserId();
+        var session = await _db.DebateSessions
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
+        if (session == null) return NotFound();
+
+        session.IsFavourite = !session.IsFavourite;
+        await _db.SaveChangesAsync();
+        return Ok(new { isFavourite = session.IsFavourite });
+    }
+
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStats()
+    {
+        var userId = GetUserId();
+        var sessions = await _db.DebateSessions
+            .Where(s => s.UserId == userId)
+            .Include(s => s.Synthesis)
+            .ToListAsync();
+
+        var completed = sessions.Where(s => s.Status == "completed").ToList();
+        var avgConfidence = completed.Any(s => s.Synthesis != null)
+            ? completed.Where(s => s.Synthesis != null).Average(s => s.Synthesis!.ConfidenceScore)
+            : 0;
+
+        return Ok(new
+        {
+            total = sessions.Count,
+            completed = completed.Count,
+            failed = sessions.Count(s => s.Status == "failed"),
+            favourites = sessions.Count(s => s.IsFavourite),
+            avgConfidence = Math.Round(avgConfidence, 1)
+        });
     }
 
     private Guid GetUserId()

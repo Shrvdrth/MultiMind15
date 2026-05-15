@@ -7,6 +7,7 @@ public class DebateSession
     public string OriginalPrompt { get; set; } = string.Empty;
     public string Status { get; set; } = "pending"; // pending | running | completed | failed
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsFavourite { get; set; } = false;
 
     public User User { get; set; } = null!;
     public ICollection<DebateRound> Rounds { get; set; } = new List<DebateRound>();

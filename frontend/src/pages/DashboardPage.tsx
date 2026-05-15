@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { startDebate } from '../api/debate';
+import { useNavigate, Link } from 'react-router-dom';
+import { startDebate, getHistory, getStats, toggleFavourite } from '../api/debate';
+import type { DebateStats, HistoryItem } from '../api/debate';
 import { useAuth } from '../context/AuthContext';
 
 const AGENTS = [
@@ -41,10 +42,15 @@ export default function DashboardPage() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [stats, setStats] = useState<DebateStats | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
   const { email, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getStats().then(r => setStats(r.data)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -84,6 +90,7 @@ export default function DashboardPage() {
         <span className="header-logo gradient-text">MultiMind</span>
         <div className="header-right">
           <span className="header-email">{email}</span>
+          <Link to="/profile" className="btn-ghost">Profile</Link>
           <button onClick={() => { logout(); navigate('/login'); }} className="btn-ghost">
             Sign Out
           </button>
@@ -91,6 +98,30 @@ export default function DashboardPage() {
       </header>
 
       <main className="dashboard-main">
+        {/* Stats Bar */}
+        {stats && (
+          <div className="dashboard-stats-bar">
+            <div className="dash-stat">
+              <span className="dash-stat-value gradient-text">{stats.total}</span>
+              <span className="dash-stat-label">Total Debates</span>
+            </div>
+            <div className="dash-stat">
+              <span className="dash-stat-value gradient-text">{stats.completed}</span>
+              <span className="dash-stat-label">Completed</span>
+            </div>
+            <div className="dash-stat">
+              <span className="dash-stat-value gradient-text">{stats.favourites}</span>
+              <span className="dash-stat-label">Favourites</span>
+            </div>
+            <div className="dash-stat">
+              <span className="dash-stat-value gradient-text">
+                {stats.avgConfidence > 0 ? `${Math.round(stats.avgConfidence)}%` : '—'}
+              </span>
+              <span className="dash-stat-label">Avg Confidence</span>
+            </div>
+          </div>
+        )}
+
         {/* Hero */}
         <section className="hero-section">
           <h2>
@@ -150,41 +181,94 @@ export default function DashboardPage() {
 }
 
 function HistorySection() {
-  const [history, setHistory] = useState<{ id: string; originalPrompt: string; status: string }[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadingH, setLoadingH] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const navigate = useNavigate();
 
-  const load = async () => {
-    if (loaded) { return; }
+  const load = async (s?: string, st?: string) => {
     setLoadingH(true);
-    const { getHistory } = await import('../api/debate');
-    const res = await getHistory();
-    setHistory(res.data);
-    setLoaded(true);
-    setLoadingH(false);
+    try {
+      const res = await getHistory(s, st);
+      setHistory(res.data);
+      setLoaded(true);
+    } finally {
+      setLoadingH(false);
+    }
+  };
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    load(search, statusFilter);
+  };
+
+  const handleFav = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      const res = await toggleFavourite(id);
+      setHistory(h => h.map(item =>
+        item.id === id ? { ...item, isFavourite: res.data.isFavourite } : item
+      ));
+    } catch {}
   };
 
   return (
     <div className="history-section">
       <h3>Past Debates</h3>
-      {!loaded && (
-        <button onClick={load} className="btn-ghost" disabled={loadingH}>
+      {!loaded ? (
+        <button onClick={() => load()} className="btn-ghost" disabled={loadingH}>
           {loadingH ? 'Loading...' : '↺  Load History'}
         </button>
-      )}
-      {loaded && history.length === 0 && (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No past debates yet.</p>
-      )}
-      {history.length > 0 && (
-        <ul className="history-list">
-          {history.map((item) => (
-            <li key={item.id} onClick={() => navigate(`/session/${item.id}`)} className="history-item">
-              <span className="history-prompt">{item.originalPrompt.slice(0, 90)}{item.originalPrompt.length > 90 ? '…' : ''}</span>
-              <span className={`status status-${item.status}`}>{item.status}</span>
-            </li>
-          ))}
-        </ul>
+      ) : (
+        <>
+          <form className="history-filter-row" onSubmit={handleSearch}>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search debates..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <select
+              className="filter-select"
+              value={statusFilter}
+              onChange={e => { setStatusFilter(e.target.value); load(search, e.target.value); }}
+            >
+              <option value="">All Statuses</option>
+              <option value="completed">Completed</option>
+              <option value="running">Running</option>
+              <option value="failed">Failed</option>
+            </select>
+            <button type="submit" className="btn-ghost">Search</button>
+          </form>
+
+          {loadingH && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Filtering...</p>}
+          {!loadingH && history.length === 0 && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No debates found.</p>
+          )}
+          <ul className="history-list">
+            {history.map((item) => (
+              <li key={item.id} onClick={() => navigate(`/session/${item.id}`)} className="history-item">
+                <span className="fav-btn" onClick={e => handleFav(e, item.id)}>
+                  {item.isFavourite ? '★' : '☆'}
+                </span>
+                <span className="history-prompt">
+                  {item.originalPrompt.slice(0, 90)}{item.originalPrompt.length > 90 ? '…' : ''}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                  {item.createdAt && (
+                    <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </span>
+                  )}
+                  <span className={`status status-${item.status}`}>{item.status}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
