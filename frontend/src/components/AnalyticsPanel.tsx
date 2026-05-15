@@ -1,6 +1,8 @@
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LineChart, Line,
 } from 'recharts';
 import type { DebateRoundDto } from '../api/debate';
 
@@ -142,6 +144,24 @@ export default function AnalyticsPanel({ rounds, synthesisText }: Props) {
   }));
   const maxWords = Math.max(...wordCounts.map(w => w.words), 1);
 
+  // Per-round word count (for grouped BarChart)
+  const wordsPerRound = rounds.map(r => {
+    const row: Record<string, string | number> = { round: `Round ${r.roundNumber}` };
+    for (const resp of r.responses) {
+      row[resp.agentType] = resp.responseText.trim().split(/\s+/).length;
+    }
+    return row;
+  });
+
+  // Per-round sentiment positive ratio (for LineChart)
+  const sentimentPerRound = rounds.map(r => {
+    const row: Record<string, string | number> = { round: `Round ${r.roundNumber}` };
+    for (const resp of r.responses) {
+      row[resp.agentType] = analyzeSentiment(resp.responseText).posRatio;
+    }
+    return row;
+  });
+
   // Sentiment per agent
   const sentimentData = Object.entries(agentTexts).map(([agent, text]) => ({
     agent,
@@ -241,6 +261,62 @@ export default function AnalyticsPanel({ rounds, synthesisText }: Props) {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Words per Round */}
+      <div className="analytics-card">
+        <h3><span>📊</span> Words per Round</h3>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+          How much each agent contributed across debate rounds
+        </p>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={wordsPerRound} barGap={4} barCategoryGap="30%">
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <XAxis dataKey="round" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+            <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} width={36} />
+            <Tooltip
+              contentStyle={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f1f5f9', fontSize: '0.8rem' }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(val: any, name: any) => [`${val} words`, AGENT_DISPLAY[name] || name] as any}
+            />
+            <Legend formatter={(val) => AGENT_DISPLAY[val] || val} wrapperStyle={{ fontSize: '0.8rem' }} />
+            {Object.keys(agentTexts).map(agent => (
+              <Bar key={agent} dataKey={agent} fill={AGENT_COLORS[agent] || '#6366f1'} radius={[3, 3, 0, 0]} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Sentiment Trend per Round */}
+      <div className="analytics-card">
+        <h3><span>📈</span> Sentiment Trend</h3>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+          Positive tone % per agent across rounds (higher = more constructive)
+        </p>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={sentimentPerRound}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <XAxis dataKey="round" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+            <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} width={36} tickFormatter={(v) => `${v}%`} />
+            <Tooltip
+              contentStyle={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f1f5f9', fontSize: '0.8rem' }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(val: any, name: any) => [`${val}%`, AGENT_DISPLAY[name] || name] as any}
+            />
+            <Legend formatter={(val) => AGENT_DISPLAY[val] || val} wrapperStyle={{ fontSize: '0.8rem' }} />
+            {Object.keys(agentTexts).map(agent => (
+              <Line
+                key={agent}
+                type="monotone"
+                dataKey={agent}
+                stroke={AGENT_COLORS[agent] || '#6366f1'}
+                strokeWidth={2}
+                dot={{ r: 4, fill: AGENT_COLORS[agent] || '#6366f1' }}
+                activeDot={{ r: 6 }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Sentiment Analysis */}

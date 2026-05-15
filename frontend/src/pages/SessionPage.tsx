@@ -35,8 +35,8 @@ export default function SessionPage() {
       try {
         const res = await getSession(sessionId);
         setSession(res.data);
-        if ((res.data as any).isFavourite !== undefined) {
-          setIsFavourite((res.data as any).isFavourite);
+        if (res.data.isFavourite !== undefined) {
+          setIsFavourite(res.data.isFavourite);
         }
         if (res.data.status !== 'running') {
           if (pollRef.current) clearInterval(pollRef.current);

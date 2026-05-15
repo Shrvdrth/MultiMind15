@@ -23,6 +23,8 @@ export interface DebateSessionDto {
   status: string;
   rounds: DebateRoundDto[];
   synthesis: ModeratorSynthesisDto | null;
+  isFavourite?: boolean;
+  createdAt?: string;
 }
 
 export interface HistoryItem {
