@@ -33,30 +33,69 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <h1>MultiMind</h1>
-        <h2>Create Account</h2>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password (min 8 chars)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {error && <p className="error">{error}</p>}
-          <button type="submit" disabled={loading}>
-            {loading ? 'Creating account...' : 'Register'}
-          </button>
-        </form>
-        <p>Already registered? <Link to="/login">Sign In</Link></p>
+      <div className="auth-brand">
+        <div className="auth-brand-logo gradient-text">MultiMind</div>
+        <p>
+          Built for analysts, researchers and decision-makers. Get structured AI debate
+          on complex decisions — free of groupthink, driven by evidence.
+        </p>
+        <div className="auth-features">
+          <div className="auth-feature">
+            <span className="auth-feature-icon">🎯</span>
+            <div>
+              <h4>Perfect for Data Analytics</h4>
+              <p>Evaluate research questions, methodology choices and analytical frameworks</p>
+            </div>
+          </div>
+          <div className="auth-feature">
+            <span className="auth-feature-icon">🔍</span>
+            <div>
+              <h4>Structured Reasoning</h4>
+              <p>Each agent argues independently — no consensus bias or hallucinated agreements</p>
+            </div>
+          </div>
+          <div className="auth-feature">
+            <span className="auth-feature-icon">📤</span>
+            <div>
+              <h4>Export Ready</h4>
+              <p>Download full debate transcripts as JSON for further analysis</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="auth-right">
+        <div className="auth-card">
+          <div className="auth-card-logo gradient-text">MultiMind</div>
+          <h2>Create your account</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="input-group">
+              <label>Email address</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="input-group">
+              <label>Password <span style={{color:'var(--text-dim)',fontWeight:400}}>(min 8 chars)</span></label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {error && <p className="error">⚠ {error}</p>}
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Creating account...' : 'Create Account →'}
+            </button>
+          </form>
+          <p>Already have an account? <Link to="/login">Sign in</Link></p>
+        </div>
       </div>
     </div>
   );
