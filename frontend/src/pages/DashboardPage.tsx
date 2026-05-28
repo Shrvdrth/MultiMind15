@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DebateStats | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
-  const { email, logout } = useAuth();
+  const { email, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,8 +90,9 @@ export default function DashboardPage() {
         <span className="header-logo gradient-text">MultiMind</span>
         <div className="header-right">
           <span className="header-email">{email}</span>
+          {isAdmin && <Link to="/admin" className="btn-ghost">Admin Panel</Link>}
           <Link to="/profile" className="btn-ghost">Profile</Link>
-          <button onClick={() => { logout(); navigate('/login'); }} className="btn-ghost">
+          <button onClick={async () => { await logout(); navigate('/login'); }} className="btn-ghost">
             Sign Out
           </button>
         </div>

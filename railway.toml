@@ -15,3 +15,7 @@ restartPolicyMaxRetries = 3
 name = "frontend"
 source = "frontend"
 dockerfile = "frontend/Dockerfile"
+
+[services.build]
+# VITE_API_BASE_URL must be set in Railway dashboard → frontend service → Variables
+# e.g. https://your-backend.up.railway.app/api

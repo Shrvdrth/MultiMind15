@@ -25,18 +25,16 @@ export default function ForgotPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-brand">
-        <div className="brand-content">
-          <div className="brand-logo gradient-text">MultiMind</div>
-          <p className="brand-tagline">Reset your password securely</p>
-          <div className="brand-features">
-            <div className="brand-feature">
-              <span className="feature-icon">🔒</span>
-              <div><strong>Secure Reset</strong><p>Token-based password reset</p></div>
-            </div>
-            <div className="brand-feature">
-              <span className="feature-icon">⏱️</span>
-              <div><strong>15-Minute Window</strong><p>Tokens expire for your safety</p></div>
-            </div>
+        <div className="auth-brand-logo gradient-text">MultiMind</div>
+        <p>Reset your password securely using a one-time token sent to your account.</p>
+        <div className="auth-features">
+          <div className="auth-feature">
+            <span className="auth-feature-icon">🔒</span>
+            <div><h4>Secure Reset</h4><p>Token-based password reset — no email required</p></div>
+          </div>
+          <div className="auth-feature">
+            <span className="auth-feature-icon">⏱️</span>
+            <div><h4>15-Minute Window</h4><p>Tokens expire automatically for your safety</p></div>
           </div>
         </div>
       </div>
@@ -45,9 +43,10 @@ export default function ForgotPasswordPage() {
         <div className="auth-card">
           {!token ? (
             <>
-              <h2 className="auth-title">Forgot Password</h2>
-              <p className="auth-sub">Enter your email to receive a reset token</p>
-              {error && <div className="error-banner">{error}</div>}
+              <div className="auth-card-logo gradient-text">MultiMind</div>
+              <h2>Forgot Password</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '1rem' }}>Enter your email to receive a reset token</p>
+              {error && <p className="error">⚠ {error}</p>}
               <form onSubmit={handleSubmit}>
                 <div className="input-group">
                   <label>Email Address</label>
@@ -64,15 +63,15 @@ export default function ForgotPasswordPage() {
                   {loading ? 'Sending...' : 'Get Reset Token →'}
                 </button>
               </form>
-              <p className="auth-switch">
+              <p style={{ marginTop: '1.25rem', color: 'var(--text-muted)', fontSize: '0.88rem', textAlign: 'center' }}>
                 Remember your password? <Link to="/login">Sign in</Link>
               </p>
             </>
           ) : (
             <div className="reset-token-reveal">
               <div className="token-icon">🎯</div>
-              <h2 className="auth-title">Your Reset Token</h2>
-              <p className="auth-sub">Copy this token — it expires in 15 minutes</p>
+              <h2>Your Reset Token</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '1rem' }}>Copy this token — it expires in 15 minutes</p>
               <div className="token-display">{token}</div>
               <button
                 className="btn-secondary"

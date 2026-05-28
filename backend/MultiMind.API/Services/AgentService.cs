@@ -5,7 +5,8 @@ namespace MultiMind.API.Services;
 
 public interface IAgentService
 {
-    Task<string> GetResponseAsync(string agentType, List<ChatMessage> history, string userMessage);
+    Task<(string Text, int Tokens)> GetResponseAsync(string agentType, List<ChatMessage> history, string userMessage);
+    IAsyncEnumerable<string> GetResponseStreamingAsync(string agentType, List<ChatMessage> history, string userMessage, Action<int>? onTokensUsed = null, CancellationToken ct = default);
 }
 
 public class AgentService : IAgentService
@@ -38,14 +39,18 @@ public class AgentService : IAgentService
 
     public AgentService(IConfiguration config)
     {
-        var apiKey = config["OpenAI__ApiKey"]
+        var apiKey = config["OpenAI:ApiKey"]
             ?? throw new InvalidOperationException("OpenAI API key not configured.");
-        var model = config["OpenAI__Model"] ?? "gpt-4o";
-        var baseUrl = config["OpenAI__BaseUrl"];
+        var model = config["OpenAI:Model"] ?? "gpt-4o";
+        var baseUrl = config["OpenAI:BaseUrl"];
 
         if (!string.IsNullOrEmpty(baseUrl))
         {
-            var options = new OpenAIClientOptions { Endpoint = new Uri(baseUrl) };
+            var options = new OpenAIClientOptions
+            {
+                Endpoint = new Uri(baseUrl),
+                NetworkTimeout = TimeSpan.FromSeconds(90)
+            };
             _client = new ChatClient(model, new System.ClientModel.ApiKeyCredential(apiKey), options);
         }
         else
@@ -54,7 +59,7 @@ public class AgentService : IAgentService
         }
     }
 
-    public async Task<string> GetResponseAsync(string agentType, List<ChatMessage> history, string userMessage)
+    public async Task<(string Text, int Tokens)> GetResponseAsync(string agentType, List<ChatMessage> history, string userMessage)
     {
         if (!SystemPrompts.TryGetValue(agentType, out var systemPrompt))
             throw new ArgumentException($"Unknown agent type: {agentType}");
@@ -66,7 +71,43 @@ public class AgentService : IAgentService
         messages.AddRange(history);
         messages.Add(new UserChatMessage(userMessage));
 
-        var completion = await _client.CompleteChatAsync(messages);
-        return completion.Value.Content[0].Text;
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        var completion = await _client.CompleteChatAsync(messages, cancellationToken: cts.Token);
+        var tokens = completion.Value.Usage?.TotalTokenCount ?? 0;
+        return (completion.Value.Content[0].Text, tokens);
+    }
+
+    public async IAsyncEnumerable<string> GetResponseStreamingAsync(
+        string agentType,
+        List<ChatMessage> history,
+        string userMessage,
+        Action<int>? onTokensUsed = null,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        if (!SystemPrompts.TryGetValue(agentType, out var systemPrompt))
+            throw new ArgumentException($"Unknown agent type: {agentType}");
+
+        var messages = new List<ChatMessage>
+        {
+            new SystemChatMessage(systemPrompt)
+        };
+        messages.AddRange(history);
+        messages.Add(new UserChatMessage(userMessage));
+
+        int capturedTokens = 0;
+        await foreach (var update in _client.CompleteChatStreamingAsync(messages, cancellationToken: ct))
+        {
+            // The final streaming update carries the usage summary
+            if (update.Usage is { TotalTokenCount: > 0 } usage)
+                capturedTokens = usage.TotalTokenCount;
+
+            foreach (var part in update.ContentUpdate)
+            {
+                if (!string.IsNullOrEmpty(part.Text))
+                    yield return part.Text;
+            }
+        }
+
+        onTokensUsed?.Invoke(capturedTokens);
     }
 }

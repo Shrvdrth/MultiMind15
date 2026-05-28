@@ -5,7 +5,7 @@ namespace MultiMind.API.Services;
 
 public interface IModeratorService
 {
-    Task<ModeratorResult> SynthesizeAsync(string originalPrompt, List<DebateTranscriptEntry> transcript);
+    Task<(ModeratorResult Result, int Tokens)> SynthesizeAsync(string originalPrompt, List<DebateTranscriptEntry> transcript);
 }
 
 public record ModeratorResult(
@@ -49,14 +49,18 @@ public class ModeratorService : IModeratorService
 
     public ModeratorService(IConfiguration config)
     {
-        var apiKey = config["OpenAI__ApiKey"]
+        var apiKey = config["OpenAI:ApiKey"]
             ?? throw new InvalidOperationException("OpenAI API key not configured.");
-        var model = config["OpenAI__Model"] ?? "gpt-4o";
-        var baseUrl = config["OpenAI__BaseUrl"];
+        var model = config["OpenAI:Model"] ?? "gpt-4o";
+        var baseUrl = config["OpenAI:BaseUrl"];
 
         if (!string.IsNullOrEmpty(baseUrl))
         {
-            var options = new OpenAIClientOptions { Endpoint = new Uri(baseUrl) };
+            var options = new OpenAIClientOptions
+            {
+                Endpoint = new Uri(baseUrl),
+                NetworkTimeout = TimeSpan.FromSeconds(90)
+            };
             _client = new ChatClient(model, new System.ClientModel.ApiKeyCredential(apiKey), options);
         }
         else
@@ -65,7 +69,7 @@ public class ModeratorService : IModeratorService
         }
     }
 
-    public async Task<ModeratorResult> SynthesizeAsync(string originalPrompt, List<DebateTranscriptEntry> transcript)
+    public async Task<(ModeratorResult Result, int Tokens)> SynthesizeAsync(string originalPrompt, List<DebateTranscriptEntry> transcript)
     {
         var transcriptText = string.Join("\n\n", transcript.Select(t =>
             $"[Round {t.Round} — {t.AgentType}]\n{t.Response}"));
@@ -86,10 +90,27 @@ public class ModeratorService : IModeratorService
             new UserChatMessage(userMessage)
         };
 
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         var completion = await _client.CompleteChatAsync(messages,
-            new ChatCompletionOptions { ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat() });
+            new ChatCompletionOptions { ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat() },
+            cancellationToken: cts.Token);
 
-        var json = completion.Value.Content[0].Text;
+        var rawText = completion.Value.Content[0].Text?.Trim() ?? "";
+        var tokens = completion.Value.Usage?.TotalTokenCount ?? 0;
+        return (ParseModeratorJson(rawText), tokens);
+    }
+
+    /// <summary>Parses the raw JSON string returned by the AI (strips markdown fences if present).</summary>
+    internal static ModeratorResult ParseModeratorJson(string rawText)
+    {
+        var json = rawText?.Trim() ?? "";
+        // Strip markdown code block if present (e.g. ```json ... ``` or ``` ... ```)
+        if (json.StartsWith("```"))
+        {
+            var firstNewline = json.IndexOf('\n');
+            if (firstNewline >= 0) json = json[(firstNewline + 1)..];
+            if (json.EndsWith("```")) json = json[..^3].TrimEnd();
+        }
         var result = System.Text.Json.JsonSerializer.Deserialize<ModeratorJsonResult>(json,
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             ?? throw new InvalidOperationException("Failed to parse moderator response.");

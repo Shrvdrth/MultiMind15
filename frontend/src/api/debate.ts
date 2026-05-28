@@ -25,6 +25,7 @@ export interface DebateSessionDto {
   synthesis: ModeratorSynthesisDto | null;
   isFavourite?: boolean;
   createdAt?: string;
+  userInput?: string;
 }
 
 export interface HistoryItem {
@@ -62,3 +63,6 @@ export const getStats = () =>
 
 export const toggleFavourite = (sessionId: string) =>
   api.put<{ isFavourite: boolean }>(`/debate/${sessionId}/favourite`);
+
+export const submitUserInput = (sessionId: string, message: string) =>
+  api.post<{ message: string }>(`/debate/${sessionId}/user-input`, { message });

@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await loginApi(email, password);
-      login(res.data.token, res.data.email);
+      login(res.data.token, res.data.email, res.data.role ?? 'User', res.data.refreshToken ?? '');
       navigate('/dashboard');
     } catch {
       setError('Invalid email or password.');

@@ -22,13 +22,21 @@ jobs:
         run: dotnet restore
         working-directory: backend/MultiMind.API
 
+      - name: Restore Tests
+        run: dotnet restore
+        working-directory: backend/MultiMind.API.Tests
+
       - name: Build
         run: dotnet build --no-restore -c Release
         working-directory: backend/MultiMind.API
 
+      - name: Build Tests
+        run: dotnet build --no-restore -c Release
+        working-directory: backend/MultiMind.API.Tests
+
       - name: Test
-        run: dotnet test --no-build -c Release
-        working-directory: backend/MultiMind.API
+        run: dotnet test -c Release --no-build
+        working-directory: backend/MultiMind.API.Tests
 
   frontend:
     name: Frontend Build & Type Check

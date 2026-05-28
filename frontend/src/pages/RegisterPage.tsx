@@ -22,7 +22,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const res = await registerApi(email, password);
-      login(res.data.token, res.data.email);
+      login(res.data.token, res.data.email, res.data.role ?? 'User', res.data.refreshToken ?? '');
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed.');

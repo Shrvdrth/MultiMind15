@@ -4,6 +4,8 @@ export interface AuthResponse {
   token: string;
   email: string;
   userId: string;
+  role: string;
+  refreshToken: string;
 }
 
 export interface UserProfile {
@@ -33,3 +35,9 @@ export const updateProfile = (displayName: string) =>
 
 export const changePassword = (currentPassword: string, newPassword: string) =>
   api.put<{ message: string }>('/users/me/password', { currentPassword, newPassword });
+
+export const refreshToken = (refreshToken: string) =>
+  api.post<AuthResponse>('/auth/refresh', { refreshToken });
+
+export const logout = (refreshToken: string) =>
+  api.post<{ message: string }>('/auth/logout', { refreshToken });

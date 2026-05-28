@@ -28,7 +28,9 @@ services:
       Jwt__Audience: MultiMindUsers
       Jwt__ExpiryMinutes: "60"
       OpenAI__ApiKey: ${OPENAI_API_KEY}
-      OpenAI__Model: gpt-4o
+      OpenAI__Model: ${OPENAI_MODEL:-anthropic/claude-sonnet-4.5}
+      OpenAI__BaseUrl: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
+      Frontend__Url: http://localhost:3000
       ASPNETCORE_ENVIRONMENT: Production
     depends_on:
       db:
@@ -38,6 +40,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
     ports:
       - "3000:80"
     depends_on:

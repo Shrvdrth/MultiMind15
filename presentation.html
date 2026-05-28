@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MultiMind — Presentation</title>
+<style>
+:root{
+  --bg:#080a10;--s1:#0f1118;--s2:#161a27;--border:#232840;
+  --accent:#6c63ff;--g:#00d4aa;--r:#ff6b6b;--y:#ffd166;
+  --text:#eef0f8;--muted:#7a84a0;
+  --str:#a0ff90;--risk:#ff6b6b;--eng:#00d4aa;--mod:#ffd166;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif}
+
+/* ── PARTICLES ── */
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ── DECK ── */
+.deck{position:relative;z-index:1;width:100vw;height:100vh}
+
+.slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 80px;opacity:0;pointer-events:none;
+  transition:opacity .6s ease,transform .6s ease;transform:translateX(60px);
+}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-60px)}
+
+/* ── PROGRESS ── */
+#progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--g));z-index:100;transition:width .5s ease}
+#slide-counter{position:fixed;bottom:24px;right:32px;font-size:.78rem;color:var(--muted);z-index:100;letter-spacing:.06em}
+#nav-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);font-size:.72rem;color:var(--muted);z-index:100;display:flex;gap:20px;align-items:center}
+#nav-hint kbd{background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-family:inherit;font-size:.72rem;color:var(--text)}
+#autoplay-btn{position:fixed;bottom:20px;right:110px;z-index:100;background:var(--s2);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:inherit;transition:all .2s}
+#autoplay-btn:hover{color:var(--text);border-color:var(--accent)}
+
+/* ── SLIDE NAV ARROWS ── */
+.arrow{position:fixed;top:50%;z-index:100;background:rgba(13,15,22,.7);border:1px solid var(--border);color:var(--muted);width:44px;height:44px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transform:translateY(-50%);transition:all .2s;backdrop-filter:blur(8px)}
+.arrow:hover{color:var(--text);border-color:var(--accent);background:rgba(108,99,255,.15)}
+#prev{left:20px}#next{right:20px}
+
+/* ── TYPOGRAPHY ── */
+.label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:10px}
+h1{font-size:clamp(3rem,8vw,6rem);font-weight:900;letter-spacing:-3px;line-height:1}
+h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;letter-spacing:-1px}
+h3{font-size:1.1rem;font-weight:700}
+.sub{font-size:clamp(.95rem,1.8vw,1.15rem);color:var(--muted);max-width:700px;text-align:center;line-height:1.7;margin-top:16px}
+.grad{background:linear-gradient(135deg,var(--accent),var(--g));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.grad2{background:linear-gradient(135deg,var(--r),var(--y));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── GRID HELPERS ── */
+.row{display:flex;gap:24px;width:100%;max-width:1100px;align-items:flex-start}
+.col{flex:1}
+.center{text-align:center;align-items:center}
+.full-w{width:100%;max-width:1100px}
+
+/* ── CARDS ── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:24px;transition:all .3s}
+.card:hover{border-color:var(--accent)}
+.card.green:hover{border-color:var(--g)}
+.card.red:hover{border-color:var(--r)}
+.card.yellow:hover{border-color:var(--y)}
+
+/* ── AGENT RING ── */
+.agent-ring{position:relative;width:500px;height:500px;flex-shrink:0}
+.ring-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:90px;height:90px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--g));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;
+  box-shadow:0 0 40px rgba(108,99,255,.5);
+  animation:ringPulse 3s ease infinite;
+}
+@keyframes ringPulse{0%,100%{box-shadow:0 0 30px rgba(108,99,255,.5)}50%{box-shadow:0 0 60px rgba(108,99,255,.8)}}
+.ring-orbit{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px dashed var(--border);
+  animation:orbitSpin 20s linear infinite;
+}
+@keyframes orbitSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.orbit-node{
+  position:absolute;width:110px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.orbit-icon{
+  width:56px;height:56px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;border:2px solid;
+  background:var(--s2);
+}
+.orbit-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;text-align:center}
+/* positions on ring (240px radius) */
+.node-1{top:calc(50% - 120px - 28px);left:calc(50% + 120px*0.866 - 55px)} /* 30° */
+.node-2{top:calc(50% + 120px - 28px);left:calc(50% - 55px)}               /* 90° offset → bottom */
+.node-3{top:calc(50% - 120px - 28px);left:calc(50% - 120px*0.866 - 55px)} /* 150° */
+
+/* ring connector lines */
+.ring-line{position:absolute;top:50%;left:50%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);transform-origin:0 0;opacity:.5}
+
+/* ── FLOW DIAGRAM ── */
+.flow{display:flex;align-items:center;gap:0;width:100%;max-width:1000px;justify-content:center}
+.flow-node{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  opacity:0;transform:translateY(20px);
+  transition:all .5s;
+}
+.flow-node.in{opacity:1;transform:translateY(0)}
+.flow-icon{
+  width:64px;height:64px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;border:2px solid var(--border);background:var(--s2);
+}
+.flow-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:center;max-width:80px}
+.flow-arrow{font-size:1.4rem;color:var(--border);margin:0 8px;flex-shrink:0;opacity:0;transition:opacity .5s}
+.flow-arrow.in{opacity:1}
+
+/* ── DEBATE ANIMATION ── */
+.debate-stage{width:100%;max-width:900px;position:relative}
+.debate-round-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;text-align:center}
+.debate-agents{display:flex;gap:16px;justify-content:center;margin-bottom:16px}
+.d-agent{
+  flex:1;max-width:220px;background:var(--s2);border-radius:12px;padding:16px;
+  border:1px solid var(--border);
+  opacity:0;transform:scale(.9);
+  transition:all .5s;
+}
+.d-agent.in{opacity:1;transform:scale(1)}
+.d-agent-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.d-agent-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.d-agent-name{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.typing-line{height:7px;border-radius:4px;background:var(--border);margin-bottom:6px;animation:typing 1.8s ease infinite}
+.typing-line:nth-child(2){width:85%;animation-delay:.2s}
+.typing-line:nth-child(3){width:70%;animation-delay:.4s}
+.typing-line:nth-child(4){width:90%;animation-delay:.6s}
+@keyframes typing{0%,100%{opacity:.3}50%{opacity:.8}}
+.mod-box{
+  background:linear-gradient(135deg,rgba(108,99,255,.08),rgba(0,212,170,.08));
+  border:1px solid rgba(108,99,255,.3);border-radius:12px;padding:18px;
+  margin-top:16px;text-align:center;
+  opacity:0;transform:translateY(16px);transition:all .6s;
+}
+.mod-box.in{opacity:1;transform:translateY(0)}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:800px}
+.stat{
+  background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;text-align:center;
+  transition:border-color .3s;
+}
+.stat:hover{border-color:var(--accent)}
+.stat-num{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-2px}
+.stat-label{font-size:.82rem;color:var(--muted);margin-top:4px}
+
+/* ── FEATURE LIST ── */
+.feat-list{display:flex;flex-direction:column;gap:12px;width:100%;max-width:800px}
+.feat-item{
+  display:flex;align-items:flex-start;gap:16px;
+  background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 20px;
+  opacity:0;transform:translateX(-20px);transition:all .4s;
+}
+.feat-item.in{opacity:1;transform:translateX(0)}
+.feat-item-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+.feat-item-title{font-weight:700;font-size:.95rem;margin-bottom:4px}
+.feat-item-desc{font-size:.83rem;color:var(--muted)}
+
+/* ── TECH GRID ── */
+.tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%;max-width:900px}
+.tech-item{
+  background:var(--s1);border:1px solid var(--border);border-radius:12px;
+  padding:16px;text-align:center;
+  opacity:0;transform:translateY(16px);transition:all .3s;
+}
+.tech-item.in{opacity:1;transform:translateY(0)}
+.tech-item:hover{border-color:var(--accent)}
+.tech-emoji{font-size:1.6rem;margin-bottom:8px}
+.tech-name{font-size:.82rem;font-weight:700}
+.tech-role{font-size:.72rem;color:var(--muted)}
+
+/* ── CONFIDENCE METER ── */
+.meter-wrap{width:100%;max-width:500px;text-align:center}
+.meter-label{font-size:.8rem;color:var(--muted);margin-bottom:10px}
+.meter-track{height:12px;background:var(--s2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+.meter-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--g));width:0;transition:width 1.5s ease}
+
+/* ── RADAR PREVIEW ── */
+.radar-wrap{position:relative;width:260px;height:260px;flex-shrink:0}
+.radar-wrap svg{width:100%;height:100%}
+
+/* ── SLIDE-SPECIFIC BGs ── */
+.slide-hero{background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(108,99,255,.18) 0%,transparent 70%)}
+.slide-problem{background:radial-gradient(ellipse 60% 60% at 80% 50%,rgba(255,107,107,.08) 0%,transparent 70%)}
+.slide-agents{background:radial-gradient(ellipse 70% 70% at 30% 50%,rgba(108,99,255,.1) 0%,transparent 70%)}
+.slide-flow{background:radial-gradient(ellipse 80% 50% at 50% 100%,rgba(0,212,170,.07) 0%,transparent 70%)}
+.slide-features{background:radial-gradient(ellipse 60% 60% at 10% 50%,rgba(108,99,255,.08) 0%,transparent 70%)}
+.slide-tech{background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(0,212,170,.07) 0%,transparent 70%)}
+.slide-end{background:radial-gradient(ellipse 80% 80% at 50% 50%,rgba(108,99,255,.15) 0%,transparent 70%)}
+
+/* ── BADGE ── */
+.badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(108,99,255,.12);border:1px solid rgba(108,99,255,.3);
+  color:#a09cf7;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:6px 18px;border-radius:99px;margin-bottom:24px;
+}
+.badge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent);animation:dotPulse 2s ease infinite}
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.6)}}
+
+/* ── TYPEWRITER ── */
+.typewriter{overflow:hidden;white-space:nowrap;border-right:3px solid var(--accent);animation:tw 3s steps(40) forwards,blink .7s step-end infinite}
+@keyframes tw{from{width:0}to{width:100%}}
+@keyframes blink{0%,100%{border-color:var(--accent)}50%{border-color:transparent}}
+
+/* ── QUOTE ── */
+.problem-items{display:flex;flex-direction:column;gap:14px;width:100%;max-width:700px}
+.problem-item{
+  display:flex;align-items:center;gap:16px;padding:16px 20px;
+  background:var(--s1);border:1px solid var(--border);border-radius:12px;
+  opacity:0;transform:translateX(30px);transition:all .4s;
+}
+.problem-item.in{opacity:1;transform:translateX(0)}
+.problem-item-icon{font-size:1.4rem;flex-shrink:0}
+.problem-item p{font-size:.9rem;color:var(--muted)}
+.problem-item strong{color:var(--text)}
+
+/* ── GLOW RING ── */
+.glow-ring{
+  position:absolute;width:700px;height:700px;border-radius:50%;
+  border:1px solid rgba(108,99,255,.1);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  animation:glowExpand 4s ease infinite;pointer-events:none;
+}
+.glow-ring:nth-child(2){animation-delay:1.3s;width:900px;height:900px;border-color:rgba(0,212,170,.06)}
+.glow-ring:nth-child(3){animation-delay:2.6s;width:1100px;height:1100px;border-color:rgba(255,107,107,.04)}
+@keyframes glowExpand{0%{opacity:.8}50%{opacity:.2}100%{opacity:.8}}
+
+/* ── SCROLLING TEXT (ticker) ── */
+.ticker{overflow:hidden;white-space:nowrap;width:100%;margin-top:40px;opacity:.4}
+.ticker-inner{display:inline-block;animation:tickerScroll 30s linear infinite;font-size:.78rem;letter-spacing:.15em;color:var(--muted)}
+@keyframes tickerScroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+
+/* SSE stream fake animation */
+.stream-box{
+  background:var(--s2);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;font-family:'Cascadia Code','Fira Code',monospace;
+  font-size:.78rem;line-height:1.8;max-width:560px;width:100%;
+  max-height:160px;overflow:hidden;position:relative;
+}
+.stream-box::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:50px;
+  background:linear-gradient(transparent,var(--s2));
+}
+.stream-line{opacity:0;animation:streamFade .3s forwards}
+@keyframes streamFade{to{opacity:1}}
+.s-kw{color:#ff79c6}.s-str{color:var(--g)}.s-muted{color:var(--muted)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .slide{padding:40px 30px}
+  .agent-ring{width:300px;height:300px}
+  .tech-grid{grid-template-columns:repeat(3,1fr)}
+  .row{flex-direction:column}
+  h1{font-size:2.8rem}
+  .agents-row-slide{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div id="progress"></div>
+<div id="slide-counter"></div>
+<div id="nav-hint">
+  <span><kbd>←</kbd> Prev</span>
+  <span><kbd>→</kbd> Next</span>
+  <span><kbd>F</kbd> Fullscreen</span>
+</div>
+<button id="autoplay-btn" onclick="toggleAutoplay()">▶ Auto-Play</button>
+<button class="arrow" id="prev" onclick="changeSlide(-1)">‹</button>
+<button class="arrow" id="next" onclick="changeSlide(1)">›</button>
+
+<div class="deck">
+
+  <!-- ══ SLIDE 1 — HERO ══ -->
+  <div class="slide slide-hero active" id="s0">
+    <div class="glow-ring"></div><div class="glow-ring"></div><div class="glow-ring"></div>
+    <div class="badge">Multi-Agent AI Decision System</div>
+    <h1 style="text-align:center">Multi<span class="grad">Mind</span></h1>
+    <p class="sub">Stop guessing. Let three AI experts debate your toughest decisions — then get a synthesis you can actually act on.</p>
+    <div style="display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;justify-content:center">
+      <div style="background:rgba(108,99,255,.12);border:1px solid rgba(108,99,255,.3);border-radius:8px;padding:10px 20px;font-size:.85rem">♟️ Strategist</div>
+      <div style="background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:10px 20px;font-size:.85rem">⚠️ Risk Analyst</div>
+      <div style="background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.3);border-radius:8px;padding:10px 20px;font-size:.85rem">⚙️ Engineer</div>
+      <div style="background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.3);border-radius:8px;padding:10px 20px;font-size:.85rem">⚖️ Moderator</div>
+    </div>
+    <div class="ticker"><span class="ticker-inner">MULTI-AGENT DEBATE &nbsp;&nbsp;·&nbsp;&nbsp; LIVE SSE STREAMING &nbsp;&nbsp;·&nbsp;&nbsp; CONFIDENCE SCORES &nbsp;&nbsp;·&nbsp;&nbsp; SENTIMENT ANALYSIS &nbsp;&nbsp;·&nbsp;&nbsp; RADAR CHARTS &nbsp;&nbsp;·&nbsp;&nbsp; JSON EXPORT &nbsp;&nbsp;·&nbsp;&nbsp; ADMIN PANEL &nbsp;&nbsp;·&nbsp;&nbsp; RATE LIMITING &nbsp;&nbsp;·&nbsp;&nbsp; PROMPT INJECTION PROTECTION &nbsp;&nbsp;·&nbsp;&nbsp;</span></div>
+  </div>
+
+  <!-- ══ SLIDE 2 — PROBLEM ══ -->
+  <div class="slide slide-problem" id="s1">
+    <div class="label">The Problem</div>
+    <h2 style="text-align:center">Making decisions is <span class="grad2">hard</span></h2>
+    <p class="sub" style="margin-bottom:32px">Important decisions deserve more than a single perspective — but gathering experts takes time and money.</p>
+    <div class="problem-items">
+      <div class="problem-item" data-in-delay="0">
+        <div class="problem-item-icon">🎯</div>
+        <p><strong>Confirmation bias</strong> — we unconsciously favour information that confirms what we already believe.</p>
+      </div>
+      <div class="problem-item" data-in-delay="150">
+        <div class="problem-item-icon">🗣️</div>
+        <p><strong>Groupthink</strong> — teams converge too fast, suppressing dissenting voices and missing critical risks.</p>
+      </div>
+      <div class="problem-item" data-in-delay="300">
+        <div class="problem-item-icon">⏰</div>
+        <p><strong>Time pressure</strong> — you need analysis <em>now</em>, not after two weeks of meetings and workshops.</p>
+      </div>
+      <div class="problem-item" data-in-delay="450">
+        <div class="problem-item-icon">💡</div>
+        <p><strong>MultiMind solves this</strong> — three AI agents with opposing mandates debate your question in seconds.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 3 — WHAT IS IT ══ -->
+  <div class="slide" id="s2">
+    <div class="label">Solution</div>
+    <h2 style="text-align:center;margin-bottom:32px">What is <span class="grad">MultiMind</span>?</h2>
+    <div class="row" style="max-width:1000px;align-items:center">
+      <div class="col" style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="border-left:3px solid var(--accent)">
+          <h3>1. You ask a question</h3>
+          <p style="color:var(--muted);font-size:.875rem;margin-top:6px">Any business or technical decision — build vs. buy, architecture choices, hiring, pricing strategy.</p>
+        </div>
+        <div class="card" style="border-left:3px solid var(--r)">
+          <h3>2. Three AI agents analyse it</h3>
+          <p style="color:var(--muted);font-size:.875rem;margin-top:6px">Strategist, Risk Analyst, and Engineer each respond independently — no groupthink.</p>
+        </div>
+        <div class="card" style="border-left:3px solid var(--g)">
+          <h3>3. They debate each other</h3>
+          <p style="color:var(--muted);font-size:.875rem;margin-top:6px">In Round 2, agents read each other's responses and challenge, defend, or refine their positions.</p>
+        </div>
+        <div class="card" style="border-left:3px solid var(--y)">
+          <h3>4. A Moderator synthesises</h3>
+          <p style="color:var(--muted);font-size:.875rem;margin-top:6px">Final recommendation with a 0–100 confidence score, consensus points, and key disagreements.</p>
+        </div>
+      </div>
+      <div class="col" style="display:flex;flex-direction:column;align-items:center;gap:16px">
+        <div class="stream-box" id="stream-demo">
+          <span class="s-muted">[DebateEngine] Starting debate...</span><br>
+        </div>
+        <div class="meter-wrap" style="margin-top:8px">
+          <div class="meter-label">Moderator Confidence Score</div>
+          <div class="meter-track"><div class="meter-bar" id="meter-bar"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:6px"><span>0%</span><span id="meter-val" style="color:var(--g);font-weight:700">0%</span><span>100%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 4 — AGENTS ══ -->
+  <div class="slide slide-agents" id="s3">
+    <div class="label">Meet the Team</div>
+    <h2 style="text-align:center;margin-bottom:40px">The <span class="grad">AI Agents</span></h2>
+    <div class="row" style="max-width:1000px;gap:20px">
+      <div class="card" style="flex:1;text-align:center;border-top:3px solid var(--accent);opacity:0;transform:translateY(30px);transition:all .4s" data-agent-delay="0">
+        <div style="font-size:2.5rem;margin-bottom:12px">♟️</div>
+        <div style="color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:.85rem;margin-bottom:10px">Strategist</div>
+        <p style="font-size:.85rem;color:var(--muted)">Evaluates business value, competitive moats, long-term positioning, and market dynamics. Thinks in quarters and years.</p>
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+          <span style="background:rgba(108,99,255,.12);color:#a09cf7;font-size:.7rem;padding:3px 9px;border-radius:99px">Business value</span>
+          <span style="background:rgba(108,99,255,.12);color:#a09cf7;font-size:.7rem;padding:3px 9px;border-radius:99px">Competitive moat</span>
+          <span style="background:rgba(108,99,255,.12);color:#a09cf7;font-size:.7rem;padding:3px 9px;border-radius:99px">Long-term ROI</span>
+        </div>
+      </div>
+      <div class="card red" style="flex:1;text-align:center;border-top:3px solid var(--r);opacity:0;transform:translateY(30px);transition:all .4s" data-agent-delay="150">
+        <div style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
+        <div style="color:var(--r);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:.85rem;margin-bottom:10px">Risk Analyst</div>
+        <p style="font-size:.85rem;color:var(--muted)">Identifies failure modes, hidden costs, probability-weighted risks, and the scenarios most people miss.</p>
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+          <span style="background:rgba(255,107,107,.1);color:var(--r);font-size:.7rem;padding:3px 9px;border-radius:99px">Failure modes</span>
+          <span style="background:rgba(255,107,107,.1);color:var(--r);font-size:.7rem;padding:3px 9px;border-radius:99px">Hidden costs</span>
+          <span style="background:rgba(255,107,107,.1);color:var(--r);font-size:.7rem;padding:3px 9px;border-radius:99px">Probability risk</span>
+        </div>
+      </div>
+      <div class="card green" style="flex:1;text-align:center;border-top:3px solid var(--g);opacity:0;transform:translateY(30px);transition:all .4s" data-agent-delay="300">
+        <div style="font-size:2.5rem;margin-bottom:12px">⚙️</div>
+        <div style="color:var(--g);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:.85rem;margin-bottom:10px">Engineer</div>
+        <p style="font-size:.85rem;color:var(--muted)">Assesses technical feasibility, implementation complexity, maintainability, and real-world execution timelines.</p>
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+          <span style="background:rgba(0,212,170,.1);color:var(--g);font-size:.7rem;padding:3px 9px;border-radius:99px">Feasibility</span>
+          <span style="background:rgba(0,212,170,.1);color:var(--g);font-size:.7rem;padding:3px 9px;border-radius:99px">Complexity</span>
+          <span style="background:rgba(0,212,170,.1);color:var(--g);font-size:.7rem;padding:3px 9px;border-radius:99px">Timeline</span>
+        </div>
+      </div>
+      <div class="card yellow" style="flex:1;text-align:center;border-top:3px solid var(--y);opacity:0;transform:translateY(30px);transition:all .4s" data-agent-delay="450">
+        <div style="font-size:2.5rem;margin-bottom:12px">⚖️</div>
+        <div style="color:var(--y);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:.85rem;margin-bottom:10px">Moderator</div>
+        <p style="font-size:.85rem;color:var(--muted)">Reads all agent outputs and synthesises a structured final recommendation with a confidence score.</p>
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+          <span style="background:rgba(255,209,102,.1);color:var(--y);font-size:.7rem;padding:3px 9px;border-radius:99px">Synthesis</span>
+          <span style="background:rgba(255,209,102,.1);color:var(--y);font-size:.7rem;padding:3px 9px;border-radius:99px">Confidence score</span>
+          <span style="background:rgba(255,209,102,.1);color:var(--y);font-size:.7rem;padding:3px 9px;border-radius:99px">Consensus</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 5 — HOW IT WORKS (FLOW) ══ -->
+  <div class="slide slide-flow" id="s4">
+    <div class="label">Process</div>
+    <h2 style="text-align:center;margin-bottom:36px">The Debate <span class="grad">Flow</span></h2>
+    <div class="flow" id="flow-anim">
+      <div class="flow-node" data-flow="0">
+        <div class="flow-icon" style="border-color:var(--accent);background:rgba(108,99,255,.1);font-size:1.6rem">❓</div>
+        <div class="flow-label">Your Question</div>
+      </div>
+      <div class="flow-arrow" data-flow-arrow="0">→</div>
+      <div class="flow-node" data-flow="1">
+        <div class="flow-icon" style="border-color:var(--g);background:rgba(0,212,170,.1)" >
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+            <span style="font-size:.9rem">♟️</span><span style="font-size:.6rem;color:var(--r)">⚠️</span><span style="font-size:.6rem;color:var(--g)">⚙️</span>
+          </div>
+        </div>
+        <div class="flow-label">Round 1 Independent</div>
+      </div>
+      <div class="flow-arrow" data-flow-arrow="1">→</div>
+      <div class="flow-node" data-flow="2">
+        <div class="flow-icon" style="border-color:var(--accent)">💬</div>
+        <div class="flow-label">Your Input</div>
+      </div>
+      <div class="flow-arrow" data-flow-arrow="2">→</div>
+      <div class="flow-node" data-flow="3">
+        <div class="flow-icon" style="border-color:var(--r);background:rgba(255,107,107,.1)">🔥</div>
+        <div class="flow-label">Round 2 Cross-Debate</div>
+      </div>
+      <div class="flow-arrow" data-flow-arrow="3">→</div>
+      <div class="flow-node" data-flow="4">
+        <div class="flow-icon" style="border-color:var(--y);background:rgba(255,209,102,.1)">⚖️</div>
+        <div class="flow-label">Moderator Synthesis</div>
+      </div>
+      <div class="flow-arrow" data-flow-arrow="4">→</div>
+      <div class="flow-node" data-flow="5">
+        <div class="flow-icon" style="border-color:var(--g);background:rgba(0,212,170,.1)">✅</div>
+        <div class="flow-label">Final Recommendation</div>
+      </div>
+    </div>
+
+    <div class="debate-stage" style="margin-top:36px">
+      <div class="debate-round-label">Round 1 — Each agent analyses independently</div>
+      <div class="debate-agents">
+        <div class="d-agent" data-debate-delay="0" style="border-top:2px solid var(--accent)">
+          <div class="d-agent-header"><div class="d-agent-icon" style="background:rgba(108,99,255,.15);color:var(--accent)">♟️</div><span class="d-agent-name" style="color:var(--accent)">Strategist</span></div>
+          <div class="typing-line"></div><div class="typing-line"></div><div class="typing-line"></div>
+        </div>
+        <div class="d-agent" data-debate-delay="300" style="border-top:2px solid var(--r)">
+          <div class="d-agent-header"><div class="d-agent-icon" style="background:rgba(255,107,107,.15);color:var(--r)">⚠️</div><span class="d-agent-name" style="color:var(--r)">Risk Analyst</span></div>
+          <div class="typing-line"></div><div class="typing-line"></div><div class="typing-line"></div>
+        </div>
+        <div class="d-agent" data-debate-delay="600" style="border-top:2px solid var(--g)">
+          <div class="d-agent-header"><div class="d-agent-icon" style="background:rgba(0,212,170,.15);color:var(--g)">⚙️</div><span class="d-agent-name" style="color:var(--g)">Engineer</span></div>
+          <div class="typing-line"></div><div class="typing-line"></div><div class="typing-line"></div>
+        </div>
+      </div>
+      <div class="mod-box" id="mod-box">
+        <span style="font-size:1.1rem">⚖️</span>
+        <span style="font-weight:700;margin-left:8px;color:var(--y)">Moderator Synthesis</span>
+        <span style="color:var(--muted);margin-left:12px;font-size:.85rem">Confidence: <strong style="color:var(--g)">72/100</strong> · Recommendation generated</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 6 — LIVE STREAMING ══ -->
+  <div class="slide" id="s5">
+    <div class="label">Real-time</div>
+    <h2 style="text-align:center;margin-bottom:8px">Live <span class="grad">SSE Streaming</span></h2>
+    <p class="sub" style="margin-bottom:32px">Responses stream token-by-token to your browser the instant the AI produces them — no waiting, no polling.</p>
+    <div class="row" style="max-width:900px;align-items:flex-start;gap:32px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px">Event Types</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block"></span><span style="font-size:.82rem"><code style="background:var(--s2);padding:2px 7px;border-radius:4px;font-family:monospace;color:#a09cf7">RoundStart</code></span></div>
+            <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--g);display:inline-block"></span><span style="font-size:.82rem"><code style="background:var(--s2);padding:2px 7px;border-radius:4px;font-family:monospace;color:#a09cf7">AgentChunk</code> — live token</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--r);display:inline-block"></span><span style="font-size:.82rem"><code style="background:var(--s2);padding:2px 7px;border-radius:4px;font-family:monospace;color:#a09cf7">WaitingForUserInput</code></span></div>
+            <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--y);display:inline-block"></span><span style="font-size:.82rem"><code style="background:var(--s2);padding:2px 7px;border-radius:4px;font-family:monospace;color:#a09cf7">ModeratorChunk</code></span></div>
+            <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:#fff;display:inline-block"></span><span style="font-size:.82rem"><code style="background:var(--s2);padding:2px 7px;border-radius:4px;font-family:monospace;color:#a09cf7">DebateComplete</code></span></div>
+          </div>
+        </div>
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px">Nginx Config</div>
+          <div style="font-family:monospace;font-size:.78rem;color:#8be9fd">proxy_buffering <span style="color:var(--g)">off</span>;<br>proxy_read_timeout <span style="color:var(--g)">600s</span>;</div>
+        </div>
+      </div>
+      <div style="flex:1.4;background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:20px;font-family:monospace;font-size:.75rem;line-height:2;min-height:280px" id="sse-box">
+        <span style="color:var(--muted)">GET /api/debate/{id}/stream</span><br>
+        <span style="color:var(--muted)">Accept: text/event-stream</span><br><br>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 7 — ANALYTICS ══ -->
+  <div class="slide" id="s6">
+    <div class="label">Insights</div>
+    <h2 style="text-align:center;margin-bottom:32px">Rich <span class="grad">Analytics</span></h2>
+    <div class="row" style="max-width:1000px;align-items:stretch;gap:20px">
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="card" style="text-align:center;border-top:3px solid var(--accent)">
+          <div style="font-size:1.6rem;margin-bottom:8px">🕸️</div>
+          <h3 style="font-size:.9rem;margin-bottom:6px">Perspective Radar</h3>
+          <p style="font-size:.78rem;color:var(--muted)">Strategy · Risk · Technical · Innovation · Depth</p>
+        </div>
+        <div class="card" style="text-align:center;border-top:3px solid var(--r)">
+          <div style="font-size:1.6rem;margin-bottom:8px">📈</div>
+          <h3 style="font-size:.9rem;margin-bottom:6px">Sentiment Trend</h3>
+          <p style="font-size:.78rem;color:var(--muted)">Positive / negative shift across rounds</p>
+        </div>
+        <div class="card green" style="text-align:center;border-top:3px solid var(--g)">
+          <div style="font-size:1.6rem;margin-bottom:8px">🤝</div>
+          <h3 style="font-size:.9rem;margin-bottom:6px">Agent Agreement</h3>
+          <p style="font-size:.78rem;color:var(--muted)">Jaccard similarity between agent responses</p>
+        </div>
+        <div class="card yellow" style="text-align:center;border-top:3px solid var(--y)">
+          <div style="font-size:1.6rem;margin-bottom:8px">📖</div>
+          <h3 style="font-size:.9rem;margin-bottom:6px">Readability</h3>
+          <p style="font-size:.78rem;color:var(--muted)">Flesch-Kincaid score + lexical diversity</p>
+        </div>
+        <div class="card" style="text-align:center;border-top:3px solid #c084fc;grid-column:span 2">
+          <div style="font-size:1.6rem;margin-bottom:8px">📊</div>
+          <h3 style="font-size:.9rem;margin-bottom:6px">Words Per Round</h3>
+          <p style="font-size:.78rem;color:var(--muted)">Per-agent contribution bar chart across all rounds</p>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:16px;justify-content:center">
+        <!-- Animated SVG radar preview -->
+        <svg viewBox="0 0 260 260" style="width:100%;max-width:260px;align-self:center" id="radar-svg">
+          <defs>
+            <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <!-- grid lines -->
+          <polygon points="130,30 220,90 195,185 65,185 40,90" fill="none" stroke="#232840" stroke-width="1"/>
+          <polygon points="130,54 202,98 182,168 78,168 58,98"  fill="none" stroke="#232840" stroke-width="1"/>
+          <polygon points="130,78 184,106 168,151 92,151 76,106" fill="none" stroke="#232840" stroke-width="1"/>
+          <polygon points="130,102 166,114 155,134 105,134 94,114" fill="none" stroke="#232840" stroke-width="1"/>
+          <!-- axis lines -->
+          <line x1="130" y1="130" x2="130" y2="30" stroke="#232840" stroke-width="1"/>
+          <line x1="130" y1="130" x2="220" y2="90" stroke="#232840" stroke-width="1"/>
+          <line x1="130" y1="130" x2="195" y2="185" stroke="#232840" stroke-width="1"/>
+          <line x1="130" y1="130" x2="65" y2="185" stroke="#232840" stroke-width="1"/>
+          <line x1="130" y1="130" x2="40" y2="90" stroke="#232840" stroke-width="1"/>
+          <!-- labels -->
+          <text x="130" y="22" text-anchor="middle" fill="#7a84a0" font-size="9" font-family="Segoe UI,sans-serif">Strategy</text>
+          <text x="228" y="92" fill="#7a84a0" font-size="9" font-family="Segoe UI,sans-serif">Risk</text>
+          <text x="200" y="200" fill="#7a84a0" font-size="9" font-family="Segoe UI,sans-serif">Technical</text>
+          <text x="40" y="200" fill="#7a84a0" font-size="9" font-family="Segoe UI,sans-serif">Innovation</text>
+          <text x="18" y="92" fill="#7a84a0" font-size="9" font-family="Segoe UI,sans-serif">Depth</text>
+          <!-- agent data -->
+          <polygon id="r-s" points="130,54 202,98 180,164 90,168 60,100" fill="rgba(108,99,255,.2)" stroke="#6c63ff" stroke-width="2" filter="url(#glow)" opacity="0" style="transition:opacity .8s"/>
+          <polygon id="r-r" points="130,72 196,108 172,158 85,162 65,104" fill="rgba(255,107,107,.15)" stroke="#ff6b6b" stroke-width="2" filter="url(#glow)" opacity="0" style="transition:opacity .8s .3s"/>
+          <polygon id="r-e" points="130,42 208,102 188,172 80,175 50,96" fill="rgba(0,212,170,.12)" stroke="#00d4aa" stroke-width="2" filter="url(#glow)" opacity="0" style="transition:opacity .8s .6s"/>
+        </svg>
+        <div style="display:flex;flex-direction:column;gap:6px;align-self:center">
+          <div style="display:flex;align-items:center;gap:8px;font-size:.78rem"><span style="width:16px;height:3px;background:var(--accent);border-radius:2px;display:inline-block"></span>Strategist</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:.78rem"><span style="width:16px;height:3px;background:var(--r);border-radius:2px;display:inline-block"></span>Risk Analyst</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:.78rem"><span style="width:16px;height:3px;background:var(--g);border-radius:2px;display:inline-block"></span>Engineer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 8 — KEY FEATURES ══ -->
+  <div class="slide slide-features" id="s7">
+    <div class="label">Capabilities</div>
+    <h2 style="text-align:center;margin-bottom:28px">Key <span class="grad">Features</span></h2>
+    <div class="feat-list" id="feat-list">
+      <div class="feat-item" data-feat-delay="0">
+        <div class="feat-item-icon">🛡️</div>
+        <div><div class="feat-item-title">Prompt Injection Protection</div><div class="feat-item-desc">10 jailbreak patterns blocked at the controller before any AI call. Your data stays safe.</div></div>
+      </div>
+      <div class="feat-item" data-feat-delay="100">
+        <div class="feat-item-icon">💾</div>
+        <div><div class="feat-item-title">Response Caching</div><div class="feat-item-desc">Identical questions within 5 minutes reuse the existing session — no wasted API cost.</div></div>
+      </div>
+      <div class="feat-item" data-feat-delay="200">
+        <div class="feat-item-icon">🚦</div>
+        <div><div class="feat-item-title">Rate Limiting</div><div class="feat-item-desc">Max 70 AI calls per user/hour. Frontend debounce prevents accidental double-submissions.</div></div>
+      </div>
+      <div class="feat-item" data-feat-delay="300">
+        <div class="feat-item-icon">🌟</div>
+        <div><div class="feat-item-title">Favourites & Export</div><div class="feat-item-desc">Star important sessions and export full debate transcripts as structured JSON files.</div></div>
+      </div>
+      <div class="feat-item" data-feat-delay="400">
+        <div class="feat-item-icon">👑</div>
+        <div><div class="feat-item-title">Admin Panel</div><div class="feat-item-desc">Platform stats, user management, all debates, audit logs, and application logs.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 9 — TECH STACK ══ -->
+  <div class="slide slide-tech" id="s8">
+    <div class="label">Architecture</div>
+    <h2 style="text-align:center;margin-bottom:32px">Tech <span class="grad">Stack</span></h2>
+    <div class="tech-grid" id="tech-grid">
+      <div class="tech-item" data-tech-delay="0"><div class="tech-emoji">⚛️</div><div class="tech-name">React 19 + Vite</div><div class="tech-role">Frontend</div></div>
+      <div class="tech-item" data-tech-delay="60"><div class="tech-emoji">📘</div><div class="tech-name">TypeScript</div><div class="tech-role">Type Safety</div></div>
+      <div class="tech-item" data-tech-delay="120"><div class="tech-emoji">🔷</div><div class="tech-name">.NET 10</div><div class="tech-role">Backend API</div></div>
+      <div class="tech-item" data-tech-delay="180"><div class="tech-emoji">🐘</div><div class="tech-name">PostgreSQL 16</div><div class="tech-role">Database</div></div>
+      <div class="tech-item" data-tech-delay="240"><div class="tech-emoji">🤖</div><div class="tech-name">OpenRouter AI</div><div class="tech-role">Claude Sonnet 4.5</div></div>
+      <div class="tech-item" data-tech-delay="300"><div class="tech-emoji">🔑</div><div class="tech-name">JWT HS256</div><div class="tech-role">Authentication</div></div>
+      <div class="tech-item" data-tech-delay="360"><div class="tech-emoji">🐳</div><div class="tech-name">Docker Compose</div><div class="tech-role">Containers</div></div>
+      <div class="tech-item" data-tech-delay="420"><div class="tech-emoji">☸️</div><div class="tech-name">Kubernetes</div><div class="tech-role">Orchestration</div></div>
+      <div class="tech-item" data-tech-delay="480"><div class="tech-emoji">⚡</div><div class="tech-name">SSE Streaming</div><div class="tech-role">Real-time</div></div>
+      <div class="tech-item" data-tech-delay="540"><div class="tech-emoji">📊</div><div class="tech-name">Recharts</div><div class="tech-role">Analytics</div></div>
+      <div class="tech-item" data-tech-delay="600"><div class="tech-emoji">🔧</div><div class="tech-name">EF Core 9</div><div class="tech-role">ORM</div></div>
+      <div class="tech-item" data-tech-delay="660"><div class="tech-emoji">🔄</div><div class="tech-name">GitHub Actions</div><div class="tech-role">CI/CD</div></div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 10 — STATS ══ -->
+  <div class="slide" id="s9">
+    <div class="label">By the numbers</div>
+    <h2 style="text-align:center;margin-bottom:40px">Built for <span class="grad">Production</span></h2>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-num grad" id="n1">0</div><div class="stat-label">AI Agents per debate</div></div>
+      <div class="stat"><div class="stat-num" style="background:linear-gradient(135deg,var(--r),var(--y));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="n2">0</div><div class="stat-label">Debate rounds</div></div>
+      <div class="stat"><div class="stat-num grad" id="n3">0</div><div class="stat-label">Unit tests passing</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--g)" id="n4">0</div><div class="stat-label">SSE event types</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--y)" id="n5">0</div><div class="stat-label">Injection patterns blocked</div></div>
+      <div class="stat"><div class="stat-num grad" id="n6">0</div><div class="stat-label">API endpoints</div></div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 11 — END ══ -->
+  <div class="slide slide-end" id="s10">
+    <div class="glow-ring"></div><div class="glow-ring"></div>
+    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px">
+      <div style="font-size:4rem">🧠</div>
+      <h1>Let's <span class="grad">Demo</span></h1>
+      <p class="sub">Ask MultiMind your toughest decision — and watch three AI experts debate it live.</p>
+      <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;justify-content:center">
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px 24px;font-size:.9rem">
+          <span style="color:var(--muted)">Local: </span><span style="color:var(--g);font-family:monospace">http://localhost:3000</span>
+        </div>
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px 24px;font-size:.9rem">
+          <span style="color:var(--muted)">API Docs: </span><span style="color:var(--accent);font-family:monospace">/scalar</span>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:600px">
+        <span style="background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);padding:8px 16px;border-radius:8px;font-size:.8rem">React 19 + .NET 10</span>
+        <span style="background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.2);padding:8px 16px;border-radius:8px;font-size:.8rem">PostgreSQL + Docker</span>
+        <span style="background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.2);padding:8px 16px;border-radius:8px;font-size:.8rem">Claude Sonnet 4.5</span>
+        <span style="background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);padding:8px 16px;border-radius:8px;font-size:.8rem">Kubernetes Ready</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<script>
+// ── PARTICLES ──
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let W, H, pts = [];
+function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize(); window.addEventListener('resize', resize);
+for(let i=0;i<80;i++) pts.push({x:Math.random()*1920,y:Math.random()*1080,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+.5,o:Math.random()*.5+.1});
+function drawParticles(){
+  ctx.clearRect(0,0,W,H);
+  for(let p of pts){
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+    if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(108,99,255,${p.o})`; ctx.fill();
+  }
+  // connections
+  for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+    if(d<100){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.strokeStyle=`rgba(108,99,255,${(1-d/100)*.12})`; ctx.lineWidth=.5; ctx.stroke(); }
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+// ── SLIDES ──
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0, autoplayTimer = null;
+
+function goTo(n){
+  const prev = slides[current];
+  prev.classList.add('exit');
+  setTimeout(()=>prev.classList.remove('active','exit'),600);
+  current = (n + total) % total;
+  slides[current].classList.add('active');
+  document.getElementById('progress').style.width = ((current+1)/total*100)+'%';
+  document.getElementById('slide-counter').textContent = (current+1)+' / '+total;
+  onSlideEnter(current);
+}
+function changeSlide(d){ goTo(current+d); }
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight'||e.key===' ') changeSlide(1);
+  if(e.key==='ArrowLeft') changeSlide(-1);
+  if(e.key==='f'||e.key==='F') document.documentElement.requestFullscreen?.();
+});
+
+// init counter
+document.getElementById('slide-counter').textContent = '1 / '+total;
+document.getElementById('progress').style.width = (1/total*100)+'%';
+
+// ── AUTOPLAY ──
+function toggleAutoplay(){
+  const btn = document.getElementById('autoplay-btn');
+  if(autoplayTimer){ clearInterval(autoplayTimer); autoplayTimer=null; btn.textContent='▶ Auto-Play'; }
+  else { autoplayTimer=setInterval(()=>changeSlide(1), 6000); btn.textContent='⏸ Pause'; }
+}
+
+// ── SLIDE ENTER HOOKS ──
+function onSlideEnter(n){
+  if(n===1) animateProblem();
+  if(n===2) animateStream();
+  if(n===3) animateAgents();
+  if(n===4) animateFlow();
+  if(n===5) animateSSE();
+  if(n===6) animateRadar();
+  if(n===7) animateFeats();
+  if(n===8) animateTech();
+  if(n===9) animateStats();
+}
+
+function animateProblem(){
+  document.querySelectorAll('.problem-item').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('in'), el.dataset.inDelay||i*150);
+  });
+}
+
+function animateStream(){
+  const bar = document.getElementById('meter-bar');
+  const val = document.getElementById('meter-val');
+  bar.style.width = '0'; val.textContent='0%';
+  const box = document.getElementById('stream-demo');
+  box.innerHTML = '<span style="color:var(--muted)">[DebateEngine] Starting debate...</span><br>';
+  const lines = [
+    '<span class="s-muted">[Round 1]</span> <span class="s-kw">Strategist</span> → analysing...',
+    '<span class="s-str">▶ "Fivetran offers 200+ connectors out-of-the-box..."</span>',
+    '<span class="s-muted">[Round 1]</span> <span style="color:var(--r)">Risk Analyst</span> → analysing...',
+    '<span class="s-str">▶ "Vendor lock-in is your biggest risk here..."</span>',
+    '<span class="s-muted">[Round 1]</span> <span style="color:var(--g)">Engineer</span> → analysing...',
+    '<span class="s-str">▶ "Airbyte + dbt covers 80% of Fivetran at 20%..."</span>',
+    '<span class="s-muted">[Moderator]</span> <span style="color:var(--y)">Synthesising...</span>',
+    '<span style="color:var(--g)">✓ Confidence: 72/100</span>',
+  ];
+  let i = 0;
+  const t = setInterval(()=>{
+    if(i >= lines.length){ clearInterval(t); return; }
+    box.innerHTML += lines[i]+'<br>'; i++;
+    const pct = Math.round((i/lines.length)*72);
+    bar.style.width = pct+'%'; val.textContent = pct+'%';
+  }, 700);
+  setTimeout(()=>{ bar.style.width='72%'; val.textContent='72%'; }, 7000);
+}
+
+function animateAgents(){
+  document.querySelectorAll('[data-agent-delay]').forEach(el=>{
+    setTimeout(()=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; }, parseInt(el.dataset.agentDelay));
+  });
+}
+
+function animateFlow(){
+  document.querySelectorAll('[data-flow]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('in'), i*200);
+  });
+  document.querySelectorAll('[data-flow-arrow]').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('in'), i*200+100);
+  });
+  document.querySelectorAll('[data-debate-delay]').forEach(el=>{
+    setTimeout(()=>el.classList.add('in'), parseInt(el.dataset.debateDelay)+1200);
+  });
+  setTimeout(()=>document.getElementById('mod-box').classList.add('in'), 2500);
+}
+
+function animateSSE(){
+  const box = document.getElementById('sse-box');
+  box.innerHTML = '<span style="color:var(--muted)">GET /api/debate/{id}/stream</span><br><span style="color:var(--muted)">Accept: text/event-stream</span><br><br>';
+  const evts = [
+    ['RoundStart','{"round":1}','var(--accent)'],
+    ['AgentStart','{"agent":"Strategist"}','#a09cf7'],
+    ['AgentChunk','{"agent":"Strategist","chunk":"Fivetran..."}','var(--g)'],
+    ['AgentChunk','{"agent":"Strategist","chunk":"...offers 200+"}','var(--g)'],
+    ['AgentDone','{"agent":"Strategist","wordCount":312}','var(--muted)'],
+    ['WaitingForUserInput','{"message":"Awaiting your input"}','var(--r)'],
+    ['ModeratorStart','{}','var(--y)'],
+    ['ModeratorChunk','{"chunk":"Given the analysis..."}','var(--y)'],
+    ['DebateComplete','{"confidenceScore":72}','#fff'],
+  ];
+  let i=0;
+  const t = setInterval(()=>{
+    if(i>=evts.length){clearInterval(t);return;}
+    const [type,data,col] = evts[i++];
+    box.innerHTML += `<span style="color:${col}">event: ${type}</span><br><span style="color:var(--muted)">data: ${data}</span><br><br>`;
+  }, 800);
+}
+
+function animateRadar(){
+  setTimeout(()=>{
+    document.getElementById('r-s').style.opacity='1';
+    document.getElementById('r-r').style.opacity='1';
+    document.getElementById('r-e').style.opacity='1';
+  }, 400);
+}
+
+function animateFeats(){
+  document.querySelectorAll('.feat-item').forEach(el=>{
+    setTimeout(()=>el.classList.add('in'), parseInt(el.dataset.featDelay||0));
+  });
+}
+
+function animateTech(){
+  document.querySelectorAll('[data-tech-delay]').forEach(el=>{
+    setTimeout(()=>el.classList.add('in'), parseInt(el.dataset.techDelay));
+  });
+}
+
+function animateStats(){
+  const targets = {n1:3, n2:2, n3:22, n4:12, n5:10, n6:20};
+  Object.entries(targets).forEach(([id,target])=>{
+    let cur=0; const step=Math.ceil(target/30);
+    const t = setInterval(()=>{
+      cur=Math.min(cur+step,target);
+      document.getElementById(id).textContent=cur;
+      if(cur>=target) clearInterval(t);
+    }, 40);
+  });
+}
+</script>
+</body>
+</html>

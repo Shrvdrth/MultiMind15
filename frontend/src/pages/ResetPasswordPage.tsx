@@ -36,27 +36,26 @@ export default function ResetPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-brand">
-        <div className="brand-content">
-          <div className="brand-logo gradient-text">MultiMind</div>
-          <p className="brand-tagline">Set a new secure password</p>
-          <div className="brand-features">
-            <div className="brand-feature">
-              <span className="feature-icon">🔑</span>
-              <div><strong>Token Verified</strong><p>Paste the token from the previous step</p></div>
-            </div>
-            <div className="brand-feature">
-              <span className="feature-icon">🛡️</span>
-              <div><strong>BCrypt Hashed</strong><p>Passwords stored securely</p></div>
-            </div>
+        <div className="auth-brand-logo gradient-text">MultiMind</div>
+        <p>Set a new secure password using the token you received.</p>
+        <div className="auth-features">
+          <div className="auth-feature">
+            <span className="auth-feature-icon">🔑</span>
+            <div><h4>Token Verified</h4><p>Paste the token from the previous step</p></div>
+          </div>
+          <div className="auth-feature">
+            <span className="auth-feature-icon">🛡️</span>
+            <div><h4>BCrypt Hashed</h4><p>Passwords stored securely — never in plain text</p></div>
           </div>
         </div>
       </div>
 
       <div className="auth-right">
         <div className="auth-card">
-          <h2 className="auth-title">Reset Password</h2>
-          <p className="auth-sub">Enter your email, reset token, and new password</p>
-          {error && <div className="error-banner">{error}</div>}
+          <div className="auth-card-logo gradient-text">MultiMind</div>
+          <h2>Reset Password</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '1rem' }}>Enter your email, reset token, and new password</p>
+          {error && <p className="error">⚠ {error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="input-group">
               <label>Email Address</label>
@@ -82,7 +81,7 @@ export default function ResetPasswordPage() {
               {loading ? 'Resetting...' : 'Reset Password →'}
             </button>
           </form>
-          <p className="auth-switch">
+          <p style={{ marginTop: '1.25rem', color: 'var(--text-muted)', fontSize: '0.88rem', textAlign: 'center' }}>
             <Link to="/forgot-password">← Get a new token</Link>
             {' · '}
             <Link to="/login">Sign in</Link>

@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MultiMind — Documentation</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --surface: #13161f;
+      --surface2: #1a1e2e;
+      --border: #252a3d;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --text: #e8ecf4;
+      --muted: #7a84a0;
+      --code-bg: #0f1117;
+      --strategist: #6c63ff;
+      --risk: #ff6b6b;
+      --engineer: #00d4aa;
+      --moderator: #ffd166;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Animated background ── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.35;
+      animation: gridDrift 30s linear infinite;
+    }
+    @keyframes gridDrift {
+      from { background-position: 0 0, 0 0; }
+      to   { background-position: 60px 60px, 60px 60px; }
+    }
+
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(108,99,255,.18) 0%, transparent 70%);
+    }
+
+    /* ── Layout ── */
+    .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(11,13,18,.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; gap: 0; height: 60px;
+    }
+    .nav-logo {
+      font-size: 1.2rem; font-weight: 700; color: var(--text); text-decoration: none;
+      letter-spacing: -.5px; display: flex; align-items: center; gap: 8px;
+      margin-right: auto;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: .875rem;
+      padding: 6px 14px; border-radius: 6px; transition: all .2s;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--surface2); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(108,99,255,.12); border: 1px solid rgba(108,99,255,.3);
+      color: #a09cf7; font-size: .8rem; font-weight: 600; letter-spacing: .04em;
+      text-transform: uppercase; padding: 6px 16px; border-radius: 99px;
+      margin-bottom: 28px;
+      animation: fadeDown .6s ease both;
+    }
+    .hero-badge::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:.4; transform:scale(1.5); }
+    }
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5rem);
+      font-weight: 800; letter-spacing: -2px; line-height: 1.05;
+      animation: fadeDown .7s .1s ease both;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, #a09cf7 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 1.15rem; color: var(--muted); max-width: 620px; margin: 20px auto 0;
+      animation: fadeDown .7s .2s ease both;
+    }
+    .hero-btns {
+      display: flex; justify-content: center; gap: 12px; margin-top: 36px; flex-wrap: wrap;
+      animation: fadeDown .7s .3s ease both;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border-radius: 10px; font-weight: 600;
+      font-size: .9rem; text-decoration: none; transition: all .25s;
+      cursor: pointer; border: none;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 0 30px rgba(108,99,255,.4);
+    }
+    .btn-primary:hover {
+      background: #7c74ff; transform: translateY(-2px);
+      box-shadow: 0 0 40px rgba(108,99,255,.6);
+    }
+    .btn-ghost {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface); transform: translateY(-2px); }
+
+    /* ── Agents row ── */
+    .agents-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin: 60px 0 80px;
+    }
+    .agent-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 22px 18px; text-align: center;
+      position: relative; overflow: hidden;
+      opacity: 0; transform: translateY(30px);
+      transition: all .3s;
+    }
+    .agent-card.visible { opacity: 1; transform: translateY(0); }
+    .agent-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(180deg, var(--card-color) 0%, transparent 100%);
+      opacity: 0; transition: opacity .3s;
+    }
+    .agent-card:hover::before { opacity: .06; }
+    .agent-card:hover { transform: translateY(-4px); border-color: var(--card-color); }
+    .agent-icon { font-size: 2rem; margin-bottom: 12px; }
+    .agent-name {
+      font-weight: 700; font-size: .95rem; color: var(--card-color);
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .agent-role { font-size: .82rem; color: var(--muted); margin-top: 6px; }
+
+    /* ── Section ── */
+    section { padding: 60px 0; }
+    .section-label {
+      display: inline-block; font-size: .78rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .12em; color: var(--accent);
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 800;
+      letter-spacing: -.5px; margin-bottom: 10px;
+    }
+    .section-desc { color: var(--muted); font-size: 1rem; margin-bottom: 40px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ── How it works ── */
+    .steps {
+      display: flex; flex-direction: column; gap: 0; position: relative;
+    }
+    .steps::before {
+      content: ''; position: absolute; left: 19px; top: 0; bottom: 0;
+      width: 2px; background: linear-gradient(180deg, var(--accent), var(--accent2));
+    }
+    .step {
+      display: flex; gap: 24px; align-items: flex-start; padding: 28px 0;
+      opacity: 0; transform: translateX(-20px); transition: all .4s;
+    }
+    .step.visible { opacity: 1; transform: translateX(0); }
+    .step-num {
+      width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
+      background: var(--surface2); border: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .9rem; color: var(--accent);
+      position: relative; z-index: 1;
+    }
+    .step-body h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+    .step-body p { color: var(--muted); font-size: .9rem; }
+    .step-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .tag {
+      font-size: .75rem; font-weight: 600; padding: 3px 10px; border-radius: 99px;
+      background: rgba(108,99,255,.12); color: #a09cf7; border: 1px solid rgba(108,99,255,.2);
+    }
+    .tag.green { background: rgba(0,212,170,.1); color: var(--accent2); border-color: rgba(0,212,170,.2); }
+    .tag.red { background: rgba(255,107,107,.1); color: var(--accent3); border-color: rgba(255,107,107,.2); }
+    .tag.yellow { background: rgba(255,209,102,.1); color: var(--moderator); border-color: rgba(255,209,102,.2); }
+
+    /* ── Tech stack ── */
+    .stack-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;
+    }
+    .stack-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; display: flex; align-items: center; gap: 14px;
+      opacity: 0; transform: translateY(20px); transition: all .3s;
+    }
+    .stack-card.visible { opacity: 1; transform: translateY(0); }
+    .stack-card:hover { border-color: var(--accent); background: var(--surface2); }
+    .stack-icon { font-size: 1.6rem; flex-shrink: 0; }
+    .stack-layer { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .stack-name { font-weight: 700; font-size: .9rem; }
+
+    /* ── API table ── */
+    .api-group { margin-bottom: 36px; }
+    .api-group-title {
+      font-size: .78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .12em; color: var(--muted); margin-bottom: 12px;
+    }
+    .api-table { width: 100%; border-collapse: collapse; }
+    .api-table th, .api-table td {
+      text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--border);
+      font-size: .875rem;
+    }
+    .api-table th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+    .api-table tr:last-child td { border-bottom: none; }
+    .api-table tbody tr { transition: background .15s; }
+    .api-table tbody tr:hover td { background: var(--surface2); }
+    .method {
+      display: inline-block; padding: 3px 9px; border-radius: 6px;
+      font-weight: 700; font-size: .72rem; letter-spacing: .06em;
+    }
+    .method.post { background: rgba(0,212,170,.12); color: var(--accent2); }
+    .method.get  { background: rgba(108,99,255,.12); color: #a09cf7; }
+    .method.put  { background: rgba(255,209,102,.12); color: var(--moderator); }
+    .method.delete { background: rgba(255,107,107,.12); color: var(--accent3); }
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      background: var(--code-bg); color: #a09cf7; padding: 2px 7px;
+      border-radius: 5px; font-size: .85em;
+    }
+
+    /* ── Code block ── */
+    .code-block {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin: 16px 0;
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .code-lang { font-size: .75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+    .code-copy {
+      font-size: .72rem; color: var(--muted); background: none; border: none;
+      cursor: pointer; padding: 2px 8px; border-radius: 4px;
+      transition: all .2s; font-family: inherit;
+    }
+    .code-copy:hover { color: var(--text); background: var(--surface2); }
+    .code-body { padding: 18px 20px; overflow-x: auto; }
+    .code-body pre { margin: 0; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: .83rem; line-height: 1.7; color: #c9d1d9; }
+    .kw { color: #ff79c6; }
+    .str { color: #f1fa8c; }
+    .cmt { color: #6272a4; }
+    .val { color: var(--accent2); }
+    .prop { color: #8be9fd; }
+
+    /* ── Features ── */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px;
+      opacity: 0; transform: translateY(20px); transition: all .35s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card.visible { opacity: 1; transform: translateY(0); }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at top left, rgba(108,99,255,.05), transparent 60%);
+      pointer-events: none;
+    }
+    .feature-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      background: rgba(108,99,255,.12); border: 1px solid rgba(108,99,255,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; margin-bottom: 14px;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 7px; }
+    .feature-card p { font-size: .875rem; color: var(--muted); }
+
+    /* ── Setup tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 8px 20px; border-radius: 8px; font-size: .875rem; font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; transition: all .2s; font-family: inherit;
+    }
+    .tab-btn:hover { color: var(--text); border-color: var(--accent); }
+    .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn .3s ease; }
+
+    /* ── Project structure ── */
+    .tree {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px; font-family: 'Cascadia Code','Fira Code','Consolas',monospace;
+      font-size: .83rem; line-height: 2; overflow-x: auto;
+    }
+    .tree-dir { color: #8be9fd; }
+    .tree-file { color: #f8f8f2; }
+    .tree-cmt { color: #6272a4; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border); padding: 40px 0;
+      text-align: center; color: var(--muted); font-size: .875rem;
+    }
+    footer strong { color: var(--text); }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity:0; transform:translateY(-16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity:0; } to { opacity:1; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .agents-row { grid-template-columns: repeat(2,1fr); }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 480px) {
+      .agents-row { grid-template-columns: 1fr 1fr; }
+      .stack-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#top">🧠 <span>Multi</span>Mind</a>
+    <div class="nav-links">
+      <a href="#how-it-works">How it Works</a>
+      <a href="#tech-stack">Tech Stack</a>
+      <a href="#setup">Setup</a>
+      <a href="#api">API</a>
+      <a href="#features">Features</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<div id="top" class="wrapper">
+  <div class="hero">
+    <div class="hero-badge">v1.0 · Multi-Agent AI · Open Source</div>
+    <h1>Multi<span class="grad">Mind</span></h1>
+    <p class="hero-sub">
+      Submit a business or technical decision. Three specialized AI agents debate it from opposing viewpoints. A Moderator synthesizes a final recommendation with a confidence score.
+    </p>
+    <div class="hero-btns">
+      <a href="#setup" class="btn btn-primary">🚀 Get Started</a>
+      <a href="#how-it-works" class="btn btn-ghost">How it Works →</a>
+    </div>
+  </div>
+
+  <!-- Agent Cards -->
+  <div class="agents-row">
+    <div class="agent-card" style="--card-color: var(--strategist)" data-delay="0">
+      <div class="agent-icon">♟️</div>
+      <div class="agent-name">Strategist</div>
+      <div class="agent-role">Evaluates business value, competitive advantage & long-term positioning</div>
+    </div>
+    <div class="agent-card" style="--card-color: var(--risk)" data-delay="100">
+      <div class="agent-icon">⚠️</div>
+      <div class="agent-name">Risk Analyst</div>
+      <div class="agent-role">Identifies failure modes, hidden costs, and probability-weighted risks</div>
+    </div>
+    <div class="agent-card" style="--card-color: var(--engineer)" data-delay="200">
+      <div class="agent-icon">⚙️</div>
+      <div class="agent-name">Engineer</div>
+      <div class="agent-role">Assesses technical feasibility, implementation complexity & maintainability</div>
+    </div>
+    <div class="agent-card" style="--card-color: var(--moderator)" data-delay="300">
+      <div class="agent-icon">⚖️</div>
+      <div class="agent-name">Moderator</div>
+      <div class="agent-role">Synthesizes all agent perspectives into a final recommendation + confidence score</div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+</div>
+
+<!-- ── How It Works ── -->
+<section id="how-it-works">
+  <div class="wrapper">
+    <div class="section-label">Process</div>
+    <h2>How it Works</h2>
+    <p class="section-desc">A structured multi-round debate with live streaming and intelligent synthesis.</p>
+
+    <div class="steps">
+      <div class="step" data-delay="0">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Submit Your Decision</h3>
+          <p>Enter any business or technical question — architecture choices, build-vs-buy, hiring decisions, strategy pivots.</p>
+          <div class="step-tags">
+            <span class="tag">Prompt injection protection</span>
+            <span class="tag">Duplicate caching (5 min)</span>
+            <span class="tag red">Rate limited: 70 calls/hr</span>
+          </div>
+        </div>
+      </div>
+      <div class="step" data-delay="100">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Round 1 — Independent Analysis</h3>
+          <p>All three agents analyze your question simultaneously with isolated memory — no groupthink.</p>
+          <div class="step-tags">
+            <span class="tag">Strategist</span>
+            <span class="tag red">Risk Analyst</span>
+            <span class="tag green">Engineer</span>
+          </div>
+        </div>
+      </div>
+      <div class="step" data-delay="200">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>User Input (Optional)</h3>
+          <p>After Round 1, you can steer the debate — provide clarification, pushback, or additional context before Round 2 begins.</p>
+          <div class="step-tags">
+            <span class="tag">Live SSE streaming</span>
+            <span class="tag">Adjustable direction</span>
+          </div>
+        </div>
+      </div>
+      <div class="step" data-delay="300">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Round 2 — Cross-Agent Debate</h3>
+          <p>Agents read each other's Round 1 responses and challenge, defend, or refine their positions.</p>
+          <div class="step-tags">
+            <span class="tag">Full conversation context</span>
+            <span class="tag">Challenge & defend</span>
+          </div>
+        </div>
+      </div>
+      <div class="step" data-delay="400">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>Moderator Synthesis</h3>
+          <p>The Moderator reads all rounds and produces a structured JSON recommendation: consensus points, disagreements, recommendation, and a 0–100 confidence score.</p>
+          <div class="step-tags">
+            <span class="tag yellow">Confidence score</span>
+            <span class="tag yellow">Key themes</span>
+            <span class="tag yellow">Agreement analysis</span>
+          </div>
+        </div>
+      </div>
+      <div class="step" data-delay="500">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h3>Analytics &amp; Export</h3>
+          <p>View sentiment trends, agent agreement (Jaccard similarity), readability scores, and a multi-axis perspective radar. Export the full session as JSON.</p>
+          <div class="step-tags">
+            <span class="tag green">Radar chart</span>
+            <span class="tag green">Sentiment analysis</span>
+            <span class="tag green">JSON export</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Tech Stack ── -->
+<section id="tech-stack">
+  <div class="wrapper">
+    <div class="section-label">Stack</div>
+    <h2>Tech Stack</h2>
+    <p class="section-desc">Modern, containerised, and production-ready.</p>
+
+    <div class="stack-grid">
+      <div class="stack-card" data-delay="0">
+        <div class="stack-icon">⚛️</div>
+        <div>
+          <div class="stack-layer">Frontend</div>
+          <div class="stack-name">React 19 + Vite</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="60">
+        <div class="stack-icon">📘</div>
+        <div>
+          <div class="stack-layer">Language</div>
+          <div class="stack-name">TypeScript</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="120">
+        <div class="stack-icon">🔷</div>
+        <div>
+          <div class="stack-layer">Backend</div>
+          <div class="stack-name">.NET 10 Web API</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="180">
+        <div class="stack-icon">🐘</div>
+        <div>
+          <div class="stack-layer">Database</div>
+          <div class="stack-name">PostgreSQL 16</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="240">
+        <div class="stack-icon">🤖</div>
+        <div>
+          <div class="stack-layer">AI</div>
+          <div class="stack-name">OpenRouter API</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="300">
+        <div class="stack-icon">🔑</div>
+        <div>
+          <div class="stack-layer">Auth</div>
+          <div class="stack-name">JWT Bearer (HS256)</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="360">
+        <div class="stack-icon">🐳</div>
+        <div>
+          <div class="stack-layer">Container</div>
+          <div class="stack-name">Docker Compose</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="420">
+        <div class="stack-icon">☸️</div>
+        <div>
+          <div class="stack-layer">Orchestration</div>
+          <div class="stack-name">Kubernetes</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="480">
+        <div class="stack-icon">⚡</div>
+        <div>
+          <div class="stack-layer">Real-time</div>
+          <div class="stack-name">SSE Streaming</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="540">
+        <div class="stack-icon">📊</div>
+        <div>
+          <div class="stack-layer">Charts</div>
+          <div class="stack-name">Recharts</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="600">
+        <div class="stack-icon">🔧</div>
+        <div>
+          <div class="stack-layer">ORM</div>
+          <div class="stack-name">EF Core 9</div>
+        </div>
+      </div>
+      <div class="stack-card" data-delay="660">
+        <div class="stack-icon">🔄</div>
+        <div>
+          <div class="stack-layer">CI/CD</div>
+          <div class="stack-name">GitHub Actions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Setup ── -->
+<section id="setup">
+  <div class="wrapper">
+    <div class="section-label">Setup</div>
+    <h2>Getting Started</h2>
+    <p class="section-desc">Choose your environment and follow the steps below.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('docker')">🐳 Docker Compose</button>
+      <button class="tab-btn" onclick="switchTab('local')">💻 Local Dev</button>
+      <button class="tab-btn" onclick="switchTab('k8s')">☸️ Kubernetes</button>
+    </div>
+
+    <!-- Docker Tab -->
+    <div class="tab-panel active" id="tab-docker">
+      <p style="color:var(--muted); margin-bottom:16px;">Recommended for most users. Runs backend, frontend, and Postgres in containers.</p>
+
+      <p style="margin-bottom:8px; font-weight:600;">1. Create a <code>.env</code> file in the project root:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">.env</span>
+          <button class="code-copy" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><pre><span class="prop">DB_PASSWORD</span>=your-postgres-password
+<span class="prop">JWT_KEY</span>=your-jwt-secret-at-least-32-chars
+<span class="prop">OPENAI_API_KEY</span>=sk-or-v1-...
+<span class="prop">OPENAI_BASE_URL</span>=https://openrouter.ai/api/v1
+<span class="prop">OPENAI_MODEL</span>=anthropic/claude-sonnet-4-5</pre></div>
+      </div>
+
+      <p style="margin-bottom:8px; font-weight:600;">2. Build and run:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><pre><span class="cmt"># From the MULTIMIND project root</span>
+docker compose up --build
+
+<span class="cmt"># Frontend  → http://localhost:3000</span>
+<span class="cmt"># Backend   → http://localhost:5000</span>
+<span class="cmt"># Postgres  → localhost:5432</span></pre></div>
+      </div>
+    </div>
+
+    <!-- Local Tab -->
+    <div class="tab-panel" id="tab-local">
+      <p style="color:var(--muted); margin-bottom:16px;">Requires Node 20+, .NET 10 SDK, and a local PostgreSQL 16 instance.</p>
+
+      <p style="margin-bottom:8px; font-weight:600;">1. Set up the database:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><pre>psql -U postgres -c <span class="str">"CREATE DATABASE multimind;"</span>
+cd backend/MultiMind.API
+dotnet ef database update</pre></div>
+      </div>
+
+      <p style="margin-bottom:8px; font-weight:600;">2. Create <code>appsettings.Development.json</code>:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">json</span>
+          <button class="code-copy" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><pre>{
+  <span class="prop">"ConnectionStrings"</span>: {
+    <span class="prop">"DefaultConnection"</span>: <span class="str">"Host=localhost;Port=5432;Database=multimind;Username=postgres;Password=YOUR_PG_PASSWORD"</span>
+  },
+  <span class="prop">"Jwt"</span>: {
+    <span class="prop">"Key"</span>: <span class="str">"your-jwt-secret-at-least-32-chars"</span>,
+    <span class="prop">"Issuer"</span>: <span class="str">"MultiMind"</span>,
+    <span class="prop">"Audience"</span>: <span class="str">"MultiMindUsers"</span>,
+    <span class="prop">"ExpiryMinutes"</span>: <span class="str">"60"</span>
+  },
+  <span class="prop">"OpenAI"</span>: {
+    <span class="prop">"ApiKey"</span>: <span class="str">"sk-or-v1-..."</span>,
+    <span class="prop">"Model"</span>: <span class="str">"anthropic/claude-sonnet-4-5"</span>,
+    <span class="prop">"BaseUrl"</span>: <span class="str">"https://openrouter.ai/api/v1"</span>
+  }
+}</pre></div>
+      </div>
+
+      <p style="margin-bottom:8px; font-weight:600;">3. Run backend + frontend:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><pre><span class="cmt"># Terminal 1 — Backend</span>
+cd backend/MultiMind.API
+dotnet run --launch-profile http
+<span class="cmt"># → http://localhost:5125  |  Scalar docs: /scalar</span>
+
+<span class="cmt"># Terminal 2 — Frontend</span>
+cd frontend
+npm install
+npm run dev
+<span class="cmt"># → http://localhost:5174</span></pre></div>
+      </div>
+    </div>
+
+    <!-- K8s Tab -->
+    <div class="tab-panel" id="tab-k8s">
+      <p style="color:var(--muted); margin-bottom:16px;">Uses the manifests in <code>k8s/</code>. Tested with Minikube.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><pre><span class="cmt"># 1. Build images</span>
+docker build -t multimind-backend:latest ./backend/MultiMind.API
+docker build -t multimind-frontend:latest ./frontend
+
+<span class="cmt"># 2. Load into Minikube</span>
+minikube image load multimind-backend:latest
+minikube image load multimind-frontend:latest
+
+<span class="cmt"># 3. Apply manifests (fill base64 secrets first)</span>
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/postgres-deployment.yaml
+kubectl apply -f k8s/backend-deployment.yaml
+kubectl apply -f k8s/frontend-deployment.yaml
+
+<span class="cmt"># 4. Open the app</span>
+minikube service frontend</pre></div>
+      </div>
+
+      <p style="margin-bottom:8px; font-weight:600; margin-top:20px;">Running Tests:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="code-copy" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><pre>cd backend/MultiMind.API.Tests
+dotnet test -c Release
+<span class="cmt"># 22 unit tests: injection detection + DebateEngine logic</span></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Project Structure ── -->
+<section>
+  <div class="wrapper">
+    <div class="section-label">Architecture</div>
+    <h2>Project Structure</h2>
+    <p class="section-desc">Monorepo with clear separation between frontend, backend, and infrastructure.</p>
+    <div class="tree">
+<span class="tree-dir">MULTIMIND/</span>
+├── <span class="tree-dir">frontend/</span>                <span class="tree-cmt"># React + Vite + TypeScript (port 3000)</span>
+│   ├── <span class="tree-dir">src/</span>
+│   │   ├── <span class="tree-dir">api/</span>             <span class="tree-cmt"># Axios client (client.ts)</span>
+│   │   ├── <span class="tree-dir">pages/</span>           <span class="tree-cmt"># Route-level pages</span>
+│   │   ├── <span class="tree-dir">components/</span>      <span class="tree-cmt"># Reusable UI (ChatDebateView, SessionPage…)</span>
+│   │   └── <span class="tree-dir">context/</span>         <span class="tree-cmt"># AuthContext</span>
+│   ├── <span class="tree-file">Dockerfile</span>
+│   └── <span class="tree-file">nginx.conf</span>           <span class="tree-cmt"># SSE-compatible (proxy_buffering off)</span>
+├── <span class="tree-dir">backend/</span>
+│   ├── <span class="tree-dir">MultiMind.API/</span>       <span class="tree-cmt"># .NET 10 Web API (port 5000 in Docker)</span>
+│   │   ├── <span class="tree-dir">Controllers/</span>     <span class="tree-cmt"># Auth, Debate, User, Admin, Comments</span>
+│   │   ├── <span class="tree-dir">Services/</span>        <span class="tree-cmt"># DebateEngine, AgentService, ModeratorService</span>
+│   │   ├── <span class="tree-dir">Models/</span>          <span class="tree-cmt"># EF Core entities</span>
+│   │   ├── <span class="tree-dir">Data/</span>            <span class="tree-cmt"># AppDbContext + migrations</span>
+│   │   ├── <span class="tree-dir">Middleware/</span>      <span class="tree-cmt"># Exception handling, request logging</span>
+│   │   └── <span class="tree-file">Dockerfile</span>
+│   └── <span class="tree-dir">MultiMind.API.Tests/</span> <span class="tree-cmt"># xUnit — 22 tests</span>
+├── <span class="tree-dir">k8s/</span>                     <span class="tree-cmt"># Kubernetes manifests</span>
+├── <span class="tree-dir">Knowledge/</span>               <span class="tree-cmt"># Epics &amp; user stories</span>
+├── <span class="tree-file">docker-compose.yml</span>
+├── <span class="tree-file">.env</span>                     <span class="tree-cmt"># Never commit — secrets only</span>
+└── <span class="tree-file">README.md</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── API Reference ── -->
+<section id="api">
+  <div class="wrapper">
+    <div class="section-label">Reference</div>
+    <h2>API Reference</h2>
+    <p class="section-desc">All endpoints require <code>Authorization: Bearer &lt;token&gt;</code> except auth routes. Scalar interactive docs available at <code>/scalar</code>.</p>
+
+    <div class="api-group">
+      <div class="api-group-title">🔑 Authentication</div>
+      <table class="api-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/auth/register</code></td><td>Register a new user account</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/auth/login</code></td><td>Login, returns JWT (60 min expiry)</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/auth/forgot-password</code></td><td>Request a password reset token</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/auth/reset-password</code></td><td>Reset password using token</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="api-group">
+      <div class="api-group-title">💬 Debate</div>
+      <table class="api-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/debate/start</code></td><td>Start a new debate session</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/debate/{sessionId}</code></td><td>Poll session status + all rounds</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/debate/{sessionId}/stream</code></td><td>Live SSE event stream</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/debate/sessions</code></td><td>List all user sessions</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/debate/{sessionId}/favourite</code></td><td>Toggle favourite on a session</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/debate/{sessionId}/input</code></td><td>Submit user input between rounds</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="api-group">
+      <div class="api-group-title">👤 User</div>
+      <table class="api-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/user/profile</code></td><td>Get current user profile</td></tr>
+          <tr><td><span class="method put">PUT</span></td><td><code>/api/user/profile</code></td><td>Update display name</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/user/change-password</code></td><td>Change password (requires current password)</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/user/stats</code></td><td>Usage statistics for the current user</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="api-group">
+      <div class="api-group-title">💬 Comments</div>
+      <table class="api-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/api/comments/{sessionId}</code></td><td>Post a comment on a session</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/comments/{sessionId}</code></td><td>Get all comments for a session</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="api-group">
+      <div class="api-group-title">🛡️ Admin (Admin role required)</div>
+      <table class="api-table">
+        <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/admin/stats</code></td><td>Platform-wide statistics</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/admin/users</code></td><td>All registered users</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/admin/debates</code></td><td>All debate sessions</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/admin/audit-logs</code></td><td>Admin audit trail</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/api/admin/app-logs</code></td><td>Application logs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── Key Features ── -->
+<section id="features">
+  <div class="wrapper">
+    <div class="section-label">Features</div>
+    <h2>Key Features</h2>
+    <p class="section-desc">Everything you need for production-grade AI-assisted decision making.</p>
+
+    <div class="features-grid">
+      <div class="feature-card" data-delay="0">
+        <div class="feature-icon">🧠</div>
+        <h3>Multi-Agent Debate</h3>
+        <p>Three agents with isolated memory debate in parallel (Round 1) then cross-challenge each other with full context (Round 2).</p>
+      </div>
+      <div class="feature-card" data-delay="60">
+        <div class="feature-icon">⚡</div>
+        <h3>Live SSE Streaming</h3>
+        <p>Responses stream token-by-token to the browser via Server-Sent Events. No polling required during active debates.</p>
+      </div>
+      <div class="feature-card" data-delay="120">
+        <div class="feature-icon">⚖️</div>
+        <h3>Moderator Synthesis</h3>
+        <p>Final decision with a 0–100 confidence score, key consensus points, disagreements, and actionable recommendation.</p>
+      </div>
+      <div class="feature-card" data-delay="180">
+        <div class="feature-icon">💾</div>
+        <h3>Response Caching</h3>
+        <p>Duplicate prompts within 5 minutes return the existing session instantly — no wasted AI API calls or cost.</p>
+      </div>
+      <div class="feature-card" data-delay="240">
+        <div class="feature-icon">🛡️</div>
+        <h3>Prompt Injection Protection</h3>
+        <p>10 known jailbreak patterns blocked at the controller level before any AI call is made.</p>
+      </div>
+      <div class="feature-card" data-delay="300">
+        <div class="feature-icon">🚦</div>
+        <h3>Rate Limiting</h3>
+        <p>Max 70 AI calls per user per hour. Frontend debounce + <code>submittingRef</code> guard prevent double-submission.</p>
+      </div>
+      <div class="feature-card" data-delay="360">
+        <div class="feature-icon">📊</div>
+        <h3>Analytics Dashboard</h3>
+        <p>Sentiment trend, agent agreement (Jaccard similarity), multi-axis perspective radar, and readability scores.</p>
+      </div>
+      <div class="feature-card" data-delay="420">
+        <div class="feature-icon">📋</div>
+        <h3>AI Call Logging</h3>
+        <p>Every OpenAI request is logged to the <code>AiCallLogs</code> table with model, tokens, latency, and user ID.</p>
+      </div>
+      <div class="feature-card" data-delay="480">
+        <div class="feature-icon">🔄</div>
+        <h3>Startup Cleanup</h3>
+        <p>Orphaned <code>running</code> sessions from crashed containers are automatically marked <code>failed</code> on server restart.</p>
+      </div>
+      <div class="feature-card" data-delay="540">
+        <div class="feature-icon">🌟</div>
+        <h3>Favourites &amp; Export</h3>
+        <p>Star any session and export the full debate transcript (all rounds + synthesis) as a structured JSON file.</p>
+      </div>
+      <div class="feature-card" data-delay="600">
+        <div class="feature-icon">👑</div>
+        <h3>Admin Panel</h3>
+        <p>Platform stats, user management, full debates list, and audit logs accessible to users with the Admin role.</p>
+      </div>
+      <div class="feature-card" data-delay="660">
+        <div class="feature-icon">🔐</div>
+        <h3>Secure Auth</h3>
+        <p>JWT HS256 tokens (60 min), BCrypt password hashing, forgot/reset password flow with time-limited tokens.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="wrapper">
+    <p>Built with <strong>React + .NET 10 + PostgreSQL + OpenRouter</strong></p>
+    <p style="margin-top:8px; font-size:.8rem;">MultiMind Documentation · Generated May 2026</p>
+  </div>
+</footer>
+
+<script>
+  // ── Tab switching ──
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+
+  // ── Copy code ──
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      const old = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.color = 'var(--accent2)';
+      setTimeout(() => { btn.textContent = old; btn.style.color = ''; }, 1800);
+    });
+  }
+
+  // ── Intersection Observer — animate on scroll ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const delay = parseInt(el.dataset.delay || '0');
+      setTimeout(() => el.classList.add('visible'), delay);
+      observer.unobserve(el);
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.agent-card, .step, .stack-card, .feature-card').forEach(el => {
+    observer.observe(el);
+  });
+
+  // ── Active nav link on scroll ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY + 80;
+    sections.forEach(sec => {
+      if (y >= sec.offsetTop && y < sec.offsetTop + sec.offsetHeight) {
+        navLinks.forEach(a => {
+          a.style.color = a.getAttribute('href') === '#' + sec.id
+            ? 'var(--text)' : '';
+        });
+      }
+    });
+  }, { passive: true });
+</script>
+</body>
+</html>

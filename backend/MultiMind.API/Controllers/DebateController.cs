@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,11 +17,21 @@ public class DebateController : ControllerBase
 {
     private readonly IDebateEngine _debateEngine;
     private readonly AppDbContext _db;
+    private readonly ILogger<DebateController> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IDebateEventBus _eventBus;
+    private readonly IUserInputWaiter _userInputWaiter;
 
-    public DebateController(IDebateEngine debateEngine, AppDbContext db)
+    public DebateController(IDebateEngine debateEngine, AppDbContext db,
+        ILogger<DebateController> logger, IServiceScopeFactory scopeFactory,
+        IDebateEventBus eventBus, IUserInputWaiter userInputWaiter)
     {
         _debateEngine = debateEngine;
         _db = db;
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+        _eventBus = eventBus;
+        _userInputWaiter = userInputWaiter;
     }
 
     [HttpPost("start")]
@@ -31,7 +43,6 @@ public class DebateController : ControllerBase
         if (request.Prompt.Length > 4000)
             return BadRequest(new { message = "Prompt exceeds maximum length of 4000 characters." });
 
-        // Epic 11.6 — Block prompt injection patterns
         if (ContainsInjectionPattern(request.Prompt))
             return BadRequest(new { message = "Input contains disallowed content." });
 
@@ -39,16 +50,108 @@ public class DebateController : ControllerBase
         if (userId == Guid.Empty)
             return Unauthorized();
 
-        // Create session immediately and run debate in background so the client can poll
         var session = await _debateEngine.CreateSessionAsync(userId, request.Prompt);
 
-        _ = Task.Run(async () =>
+        // Only launch background work for brand-new sessions
+        if (session.Status == "running" && session.CreatedAt > DateTime.UtcNow.AddSeconds(-5))
         {
-            try { await _debateEngine.RunDebateAsync(session.Id, userId, request.Prompt); }
-            catch { /* errors are recorded in session.Status = "failed" */ }
-        });
+            // Create SSE channel before launching background task so stream endpoint can subscribe immediately
+            _eventBus.CreateChannel(session.Id);
+
+            _ = Task.Run(async () =>
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var engine = scope.ServiceProvider.GetRequiredService<IDebateEngine>();
+                try { await engine.RunDebateAsync(session.Id, userId, request.Prompt); }
+                catch (Exception ex) { _logger.LogError(ex, "[DebateController] Background debate {SessionId} threw: {Message}", session.Id, ex.Message); }
+            });
+        }
 
         return Ok(new { sessionId = session.Id });
+    }
+
+    /// <summary>SSE endpoint — streams live debate events as they happen.</summary>
+    [HttpGet("{sessionId}/stream")]
+    public async Task StreamDebate(Guid sessionId, CancellationToken ct)
+    {
+        var userId = GetUserId();
+
+        // Verify ownership
+        var session = await _db.DebateSessions.FirstOrDefaultAsync(
+            s => s.Id == sessionId && s.UserId == userId, ct);
+        if (session == null)
+        {
+            Response.StatusCode = 404;
+            return;
+        }
+
+        Response.Headers.Append("Content-Type", "text/event-stream");
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("X-Accel-Buffering", "no");
+
+        // If debate already complete, return a single DebateComplete event and exit
+        if (session.Status == "completed" || session.Status == "failed")
+        {
+            var payload = JsonSerializer.Serialize(new
+            {
+                eventType = session.Status == "completed" ? "DebateComplete" : "Error",
+                sessionId = session.Id
+            });
+            await Response.WriteAsync($"data: {payload}\n\n", ct);
+            await Response.Body.FlushAsync(ct);
+            return;
+        }
+
+        // Stream live events from EventBus
+        bool sentFinalEvent = false;
+        try
+        {
+            await foreach (var evt in _eventBus.SubscribeAsync(sessionId, ct))
+            {
+                if (ct.IsCancellationRequested) break;
+
+                var json = JsonSerializer.Serialize(evt, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+                });
+                var line = $"data: {json}\n\n";
+                await Response.WriteAsync(line, Encoding.UTF8, ct);
+                await Response.Body.FlushAsync(ct);
+
+                if (evt.EventType == DebateEventType.DebateComplete ||
+                    evt.EventType == DebateEventType.Error)
+                {
+                    sentFinalEvent = true;
+                    break;
+                }
+            }
+
+            // Race condition guard: if the channel was already closed before the client
+            // connected (debate finished very fast), SubscribeAsync yields nothing and
+            // sentFinalEvent stays false. Re-read the session and send the terminal event.
+            // Only send a fallback if the debate has definitively ended (completed or failed).
+            if (!sentFinalEvent && !ct.IsCancellationRequested)
+            {
+                var latest = await _db.DebateSessions.AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == sessionId, ct);
+                if (latest != null && (latest.Status == "completed" || latest.Status == "failed"))
+                {
+                    var finalType = latest.Status == "completed" ? "DebateComplete" : "Error";
+                    var fallback = JsonSerializer.Serialize(new
+                    {
+                        eventType = finalType,
+                        sessionId = latest.Id
+                    });
+                    await Response.WriteAsync($"data: {fallback}\n\n", ct);
+                    await Response.Body.FlushAsync(ct);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Client disconnected — normal
+        }
     }
 
     // Epic 11.6 — Basic prompt injection safeguard
@@ -104,7 +207,8 @@ public class DebateController : ControllerBase
                 session.Synthesis.FullSynthesis
             ),
             session.IsFavourite,
-            session.CreatedAt
+            session.CreatedAt,
+            session.UserInput
         );
 
         return Ok(dto);
@@ -181,5 +285,32 @@ public class DebateController : ControllerBase
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)
                  ?? User.FindFirst("sub");
         return claim != null && Guid.TryParse(claim.Value, out var id) ? id : Guid.Empty;
+    }
+
+    [HttpPost("{sessionId}/user-input")]
+    public async Task<IActionResult> SubmitUserInput(Guid sessionId, [FromBody] UserInputRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Message))
+            return BadRequest(new { message = "Message cannot be empty." });
+
+        if (request.Message.Length > 4000)
+            return BadRequest(new { message = "Message exceeds 4000 characters." });
+
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        var session = await _db.DebateSessions
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
+
+        if (session == null) return NotFound();
+
+        if (session.Status != "running")
+            return BadRequest(new { message = "Debate is not currently running." });
+
+        var accepted = _userInputWaiter.TrySubmit(sessionId, request.Message);
+        if (!accepted)
+            return BadRequest(new { message = "Debate is not currently waiting for user input." });
+
+        return Ok(new { message = "Input submitted." });
     }
 }

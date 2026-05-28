@@ -103,4 +103,29 @@ public class AuthController : ControllerBase
 
         return Ok(new { message = "Password reset successfully. You can now sign in." });
     }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            return BadRequest(new { message = "Refresh token is required." });
+
+        try
+        {
+            var result = await _authService.RefreshTokenAsync(request.RefreshToken);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] RevokeRequest request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.RefreshToken))
+            await _authService.RevokeRefreshTokenAsync(request.RefreshToken);
+        return Ok(new { message = "Logged out successfully." });
+    }
 }

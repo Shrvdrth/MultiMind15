@@ -2,6 +2,8 @@ namespace MultiMind.API.DTOs;
 
 public record StartDebateRequest(string Prompt);
 
+public record UserInputRequest(string Message);
+
 public record AgentResponseDto(string AgentType, string ResponseText);
 
 public record DebateRoundDto(int RoundNumber, List<AgentResponseDto> Responses);
@@ -20,5 +22,6 @@ public record DebateSessionDto(
     List<DebateRoundDto> Rounds,
     ModeratorSynthesisDto? Synthesis,
     bool IsFavourite = false,
-    DateTime? CreatedAt = null
+    DateTime? CreatedAt = null,
+    string? UserInput = null
 );

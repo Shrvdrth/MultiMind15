@@ -1,4 +1,6 @@
-appsettings.Development.json# Dependencies
+appsettings.Development.json
+
+# Dependencies
 node_modules/
 .pnp
 .pnp.js
