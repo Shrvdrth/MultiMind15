@@ -347,6 +347,20 @@ public class DebateEngine : IDebateEngine
             session.Status = "completed";
             await _db.SaveChangesAsync();
 
+            // Stream moderator synthesis prose character by character so the UI types it out live
+            const int modChunkSize = 3;
+            var synthText = synthesis.FullSynthesis ?? "";
+            for (int ci = 0; ci < synthText.Length; ci += modChunkSize)
+            {
+                var modChunk = synthText.Substring(ci, Math.Min(modChunkSize, synthText.Length - ci));
+                await _eventBus.PublishAsync(sessionId, new DebateStreamEvent(
+                    DebateEventType.ModeratorChunk, sessionId, Text: modChunk));
+                await Task.Delay(8);
+            }
+
+            await _eventBus.PublishAsync(sessionId, new DebateStreamEvent(
+                DebateEventType.ModeratorDone, sessionId));
+
             await _eventBus.PublishAsync(sessionId, new DebateStreamEvent(
                 DebateEventType.DebateComplete, sessionId,
                 Text: System.Text.Json.JsonSerializer.Serialize(new

@@ -120,6 +120,14 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   const bottomRef = useRef<HTMLDivElement>(null);
   const currentRoundRef = useRef(0);
 
+  // ── Typewriter engine state ──────────────────────────────
+  const typingQueues    = useRef<Map<string, string>>(new Map());
+  const nextCharTime    = useRef<Map<string, number>>(new Map());
+  const streamingMsgIds = useRef<Map<string, string>>(new Map());
+  const displayedRef    = useRef<Record<string, string>>({});
+  const [displayedTexts, setDisplayedTexts] = useState<Record<string, string>>({});
+  const [verdictData, setVerdictData] = useState<{ confidenceScore: number; recommendation: string } | null>(null);
+
   // ── Static / completed mode — no streaming ──
   useEffect(() => {
     if (completedSession) {
@@ -178,10 +186,16 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           }]);
           break;
 
-        case 'AgentStart':
+        case 'AgentStart': {
+          const newMsgId = `${evt.agentType}-${Date.now()}`;
+          streamingMsgIds.current.set(evt.agentType!, newMsgId);
+          typingQueues.current.set(newMsgId, '');
+          const initDisplayed = { ...displayedRef.current, [newMsgId]: '' };
+          displayedRef.current = initDisplayed;
+          setDisplayedTexts(initDisplayed);
           setStreamingAgent(evt.agentType ?? null);
           setMessages(prev => [...prev, {
-            id: `${evt.agentType}-${Date.now()}`,
+            id: newMsgId,
             role: 'agent',
             agentType: evt.agentType,
             text: '',
@@ -189,19 +203,26 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
             round: currentRoundRef.current,
           }]);
           break;
+        }
 
-        case 'AgentChunk':
-          setMessages(prev => {
-            const updated = [...prev];
-            for (let i = updated.length - 1; i >= 0; i--) {
-              if (updated[i].agentType === evt.agentType && updated[i].isStreaming) {
-                updated[i] = { ...updated[i], text: updated[i].text + (evt.text ?? '') };
-                break;
+        case 'AgentChunk': {
+          const chunk = evt.text ?? '';
+          const qMsgId = streamingMsgIds.current.get(evt.agentType!);
+          if (qMsgId) {
+            typingQueues.current.set(qMsgId, (typingQueues.current.get(qMsgId) ?? '') + chunk);
+            setMessages(prev => {
+              const updated = [...prev];
+              for (let i = updated.length - 1; i >= 0; i--) {
+                if (updated[i].id === qMsgId) {
+                  updated[i] = { ...updated[i], text: updated[i].text + chunk };
+                  break;
+                }
               }
-            }
-            return updated;
-          });
+              return updated;
+            });
+          }
           break;
+        }
 
         case 'AgentDone':
           setStreamingAgent(null);
@@ -237,26 +258,39 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
         case 'RoundEnd':
           break;
 
-        case 'ModeratorStart':
+        case 'ModeratorStart': {
+          const modId = `moderator-${Date.now()}`;
+          streamingMsgIds.current.set('Moderator', modId);
+          typingQueues.current.set(modId, '');
+          const modInit = { ...displayedRef.current, [modId]: '' };
+          displayedRef.current = modInit;
+          setDisplayedTexts(modInit);
           setStreamingAgent('Moderator');
           setMessages(prev => [...prev,
             { id: `div-mod-${Date.now()}`, role: 'divider', text: 'Moderator Synthesis' },
-            { id: `moderator-${Date.now()}`, role: 'agent', agentType: 'Moderator', text: '', isStreaming: true },
+            { id: modId, role: 'agent', agentType: 'Moderator', text: '', isStreaming: true },
           ]);
           break;
+        }
 
-        case 'ModeratorChunk':
-          setMessages(prev => {
-            const updated = [...prev];
-            for (let i = updated.length - 1; i >= 0; i--) {
-              if (updated[i].agentType === 'Moderator' && updated[i].isStreaming) {
-                updated[i] = { ...updated[i], text: updated[i].text + (evt.text ?? '') };
-                break;
+        case 'ModeratorChunk': {
+          const mChunk = evt.text ?? '';
+          const mId = streamingMsgIds.current.get('Moderator');
+          if (mId) {
+            typingQueues.current.set(mId, (typingQueues.current.get(mId) ?? '') + mChunk);
+            setMessages(prev => {
+              const updated = [...prev];
+              for (let i = updated.length - 1; i >= 0; i--) {
+                if (updated[i].id === mId) {
+                  updated[i] = { ...updated[i], text: updated[i].text + mChunk };
+                  break;
+                }
               }
-            }
-            return updated;
-          });
+              return updated;
+            });
+          }
           break;
+        }
 
         case 'ModeratorDone':
           setStreamingAgent(null);
@@ -273,6 +307,10 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           break;
 
         case 'DebateComplete':
+          try {
+            const payload = JSON.parse(evt.text ?? '{}') as { confidenceScore?: number; recommendation?: string };
+            setVerdictData({ confidenceScore: payload.confidenceScore ?? 0, recommendation: payload.recommendation ?? '' });
+          } catch { /* ignore */ }
           setStatus('done');
           setTimeout(() => onComplete?.(), 1500);
           break;
@@ -291,6 +329,27 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Typewriter engine — drains typing queues one char at a time with natural variable speed
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = Date.now();
+      let changed = false;
+      const next = { ...displayedRef.current };
+      for (const [msgId, queue] of typingQueues.current) {
+        if (!queue.length) continue;
+        if (now < (nextCharTime.current.get(msgId) ?? 0)) continue;
+        const char = queue[0];
+        typingQueues.current.set(msgId, queue.slice(1));
+        next[msgId] = (next[msgId] ?? '') + char;
+        changed = true;
+        const pause = '.!?'.includes(char) ? 110 : ',;:'.includes(char) ? 55 : 13;
+        nextCharTime.current.set(msgId, now + pause);
+      }
+      if (changed) { displayedRef.current = next; setDisplayedTexts(next); }
+    }, 10);
+    return () => clearInterval(id);
+  }, []);
 
   const handleSendInput = async () => {
     if (!inputText.trim() || inputSending) return;
@@ -320,7 +379,8 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
         <div className="chat-debate__status">
           <div className="live-badge">
             {status === 'connecting'     && <><span className="dot dot--pulse" /> Connecting…</>}
-            {status === 'live'           && <><span className="dot dot--live" /> Live</>}
+            {status === 'live' && !streamingAgent && <><span className="dot dot--live" /> Live</>}
+            {status === 'live' && streamingAgent  && <><span className="dot dot--live" /> {streamingAgent === 'Moderator' ? 'Moderator synthesizing…' : `${AGENT_DISPLAY[streamingAgent] ?? streamingAgent} speaking…`}</>}
             {status === 'waiting-input'  && <><span className="dot dot--pulse" style={{ background: '#fbbf24' }} /> Waiting for your input…</>}
             {status === 'error'          && <><span className="dot dot--error" /> Error — debate failed</>}
           </div>
@@ -374,20 +434,30 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
                   <span className="chat-bubble__round">R{msg.round}</span>
                 )}
               </div>
-              <div className="chat-bubble__body">
-                {msg.text || (msg.isStreaming
-                  ? <span className="thinking-indicator">thinking<span className="dots"><span>.</span><span>.</span><span>.</span></span></span>
-                  : null
-                )}
-                {msg.isStreaming && msg.text && streamingAgent === msg.agentType && (
-                  <span className="typing-cursor">▌</span>
-                )}
-              </div>
+              {(() => {
+                const typed = displayedTexts[msg.id];
+                const displayText = typed !== undefined ? typed : msg.text;
+                const isCursorVisible = typed !== undefined
+                  ? typed.length < msg.text.length || msg.isStreaming
+                  : msg.isStreaming && msg.text.length > 0;
+                return (
+                  <div className="chat-bubble__body">
+                    {displayText || (msg.isStreaming
+                      ? <span className="thinking-indicator">thinking<span className="dots"><span>.</span><span>.</span><span>.</span></span></span>
+                      : null
+                    )}
+                    {isCursorVisible && <span className="typing-cursor">▌</span>}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
 
         <div ref={bottomRef} />
+        {verdictData && (
+          <VerdictCard score={verdictData.confidenceScore} recommendation={verdictData.recommendation} />
+        )}
       </div>
 
       {/* User input box — shown when backend fires WaitingForUserInput */}
@@ -419,6 +489,41 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           <p className="chat-input-panel__hint">Ctrl + Enter to send • Round 2 starts automatically in 5 min</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Verdict Card ──────────────────────────────────────────────────────────────
+
+function VerdictCard({ score, recommendation }: { score: number; recommendation: string }) {
+  const [barWidth, setBarWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setBarWidth(score), 150);
+    return () => clearTimeout(t);
+  }, [score]);
+  const color = score >= 80 ? '#34d399' : score >= 60 ? '#fbbf24' : score >= 40 ? '#f97316' : '#f87171';
+  return (
+    <div className="verdict-card">
+      <div className="verdict-card__header">
+        <span style={{ fontSize: '1.1rem' }}>⚡</span>
+        <span className="verdict-label">Final Verdict</span>
+      </div>
+      <div className="verdict-confidence">
+        <div className="verdict-confidence__row">
+          <span className="verdict-confidence__label">Consensus Score</span>
+          <span className="verdict-confidence__score" style={{ color }}>{score}</span>
+        </div>
+        <div className="verdict-bar-track">
+          <div
+            className="verdict-bar-fill"
+            style={{ width: `${barWidth}%`, background: `linear-gradient(90deg, ${color}77, ${color})` }}
+          />
+        </div>
+      </div>
+      <div className="verdict-recommendation">
+        <div className="verdict-recommendation__label">Recommendation</div>
+        <div className="verdict-recommendation__text">{recommendation}</div>
+      </div>
     </div>
   );
 }
