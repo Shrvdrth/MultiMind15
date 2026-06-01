@@ -1,26 +1,29 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import SessionPage from "./pages/SessionPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import ProfilePage from "./pages/ProfilePage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import AdminUsersPage from "./pages/admin/AdminUsersPage";
-import AdminDebatesPage from "./pages/admin/AdminDebatesPage";
-import AdminLogsPage from "./pages/admin/AdminLogsPage";
-import AdminApplicationLogsPage from "./pages/admin/AdminApplicationLogsPage";
 import ChatbotWidget from "./components/ChatbotWidget";
+
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const SessionPage = lazy(() => import("./pages/SessionPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
+const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
+const AdminDebatesPage = lazy(() => import("./pages/admin/AdminDebatesPage"));
+const AdminLogsPage = lazy(() => import("./pages/admin/AdminLogsPage"));
+const AdminApplicationLogsPage = lazy(() => import("./pages/admin/AdminApplicationLogsPage"));
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <ChatbotWidget />
+        <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<LoginPage />} />
@@ -36,6 +39,7 @@ function App() {
           <Route path="/admin/logs" element={<AdminRoute><AdminLogsPage /></AdminRoute>} />
           <Route path="/admin/application-logs" element={<AdminRoute><AdminApplicationLogsPage /></AdminRoute>} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

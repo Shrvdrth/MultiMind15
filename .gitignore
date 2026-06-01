@@ -24,6 +24,7 @@ obj/
 
 # Secrets - never commit real credentials
 backend/MultiMind.API/appsettings.Development.json
+k8s/secrets.yaml
 
 # Logs
 *.log

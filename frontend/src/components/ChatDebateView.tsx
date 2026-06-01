@@ -33,7 +33,7 @@ export interface ChatDebateViewProps {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-export const AGENT_COLORS: Record<string, string> = {
+const AGENT_COLORS: Record<string, string> = {
   Strategist:  'var(--strategist, #6366f1)',
   RiskAnalyst: 'var(--risk, #f87171)',
   Engineer:    'var(--engineer, #34d399)',
@@ -53,6 +53,72 @@ const AGENT_DISPLAY: Record<string, string> = {
   Engineer:    'Engineer',
   Moderator:   'Moderator',
 };
+
+const AGENT_KEYS = ['Strategist', 'RiskAnalyst', 'Engineer'] as const;
+type AgentKey = typeof AGENT_KEYS[number];
+
+const AGENT_TITLES: Record<string, string> = {
+  Strategist:  'Chief Strategy Officer',
+  RiskAnalyst: 'Risk Officer',
+  Engineer:    'Principal Engineer',
+};
+
+// ── Text-to-Speech helper ───────────────────────────────────────────────────
+
+function speakText(text: string, agentType: string) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang   = 'en-US';
+  utterance.volume = 1;
+  switch (agentType) {
+    case 'Strategist':  utterance.pitch = 1.00; utterance.rate = 0.93; break;
+    case 'RiskAnalyst': utterance.pitch = 0.85; utterance.rate = 0.90; break;
+    case 'Engineer':    utterance.pitch = 1.15; utterance.rate = 1.00; break;
+    case 'Moderator':   utterance.pitch = 1.05; utterance.rate = 0.87; break;
+    default:            utterance.pitch = 1.00; utterance.rate = 0.95; break;
+  }
+  window.speechSynthesis.speak(utterance);
+}
+
+// ── Derive 3-column layout from flat messages at render time ──────────────────
+
+interface GroupedRound {
+  roundNumber: number;
+  agents: Partial<Record<AgentKey, ChatMessage>>;
+}
+
+function groupRounds(messages: ChatMessage[]): {
+  rounds: GroupedRound[];
+  moderator: ChatMessage | null;
+  userInput: ChatMessage | null;
+} {
+  const rounds: GroupedRound[] = [];
+  let current: GroupedRound | null = null;
+  let moderator: ChatMessage | null = null;
+  let userInput: ChatMessage | null = null;
+
+  for (const msg of messages) {
+    if (msg.role === 'divider') {
+      if (msg.text.startsWith('Round ')) {
+        const num = parseInt(msg.text.split(' ')[1], 10);
+        current = { roundNumber: num, agents: {} };
+        rounds.push(current);
+      }
+      // Skip 'Moderator Synthesis' divider — handled separately
+    } else if (msg.role === 'agent') {
+      if (msg.agentType === 'Moderator') {
+        moderator = msg;
+      } else if (current) {
+        current.agents[msg.agentType as AgentKey] = msg;
+      }
+    } else if (msg.role === 'user' && msg.isUserInput) {
+      userInput = msg;
+    }
+  }
+
+  return { rounds, moderator, userInput };
+}
 
 // ── Build messages from a completed DebateSessionDto ─────────────────────────
 
@@ -127,6 +193,10 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   const displayedRef    = useRef<Record<string, string>>({});
   const [displayedTexts, setDisplayedTexts] = useState<Record<string, string>>({});
   const [verdictData, setVerdictData] = useState<{ confidenceScore: number; recommendation: string } | null>(null);
+
+  // ── TTS ──────────────────────────────────────────────────────────────────────
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const ttsEnabledRef = useRef(true);
 
   // ── Static / completed mode — no streaming ──
   useEffect(() => {
@@ -230,6 +300,8 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
             const updated = [...prev];
             for (let i = updated.length - 1; i >= 0; i--) {
               if (updated[i].agentType === evt.agentType && updated[i].isStreaming) {
+                if (ttsEnabledRef.current && updated[i].text)
+                  speakText(updated[i].text, evt.agentType ?? '');
                 updated[i] = { ...updated[i], isStreaming: false };
                 break;
               }
@@ -298,6 +370,8 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
             const updated = [...prev];
             for (let i = updated.length - 1; i >= 0; i--) {
               if (updated[i].agentType === 'Moderator' && updated[i].isStreaming) {
+                if (ttsEnabledRef.current && updated[i].text)
+                  speakText(updated[i].text, 'Moderator');
                 updated[i] = { ...updated[i], isStreaming: false };
                 break;
               }
@@ -307,6 +381,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           break;
 
         case 'DebateComplete':
+          window.speechSynthesis?.cancel();
           try {
             const payload = JSON.parse(evt.text ?? '{}') as { confidenceScore?: number; recommendation?: string };
             setVerdictData({ confidenceScore: payload.confidenceScore ?? 0, recommendation: payload.recommendation ?? '' });
@@ -322,7 +397,10 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
     };
 
     streamSSE();
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      window.speechSynthesis?.cancel();
+    };
   }, [sessionId, token, completedSession]);
 
   // Auto-scroll
@@ -372,95 +450,154 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  const { rounds, moderator, userInput } = groupRounds(messages);
+
   return (
-    <div className="chat-debate">
-      {/* Status bar (live mode only) */}
-      {status !== 'done' && !completedSession && (
-        <div className="chat-debate__status">
+    <div className="debate-arena">
+
+      {/* ── Status bar (live mode only) ── */}
+      {!completedSession && (
+        <div className="debate-status-bar">
           <div className="live-badge">
-            {status === 'connecting'     && <><span className="dot dot--pulse" /> Connecting…</>}
-            {status === 'live' && !streamingAgent && <><span className="dot dot--live" /> Live</>}
-            {status === 'live' && streamingAgent  && <><span className="dot dot--live" /> {streamingAgent === 'Moderator' ? 'Moderator synthesizing…' : `${AGENT_DISPLAY[streamingAgent] ?? streamingAgent} speaking…`}</>}
-            {status === 'waiting-input'  && <><span className="dot dot--pulse" style={{ background: '#fbbf24' }} /> Waiting for your input…</>}
-            {status === 'error'          && <><span className="dot dot--error" /> Error — debate failed</>}
+            {status === 'connecting'    && <><span className="dot dot--pulse" /> Connecting…</> }
+            {status === 'live' && !streamingAgent && <><span className="dot dot--live" /> Live</> }
+            {status === 'live' && streamingAgent  && (
+              <>
+                <span className="dot dot--live" />
+                <span className="arena-speaking-name" style={{ color: AGENT_COLORS[streamingAgent] }}>
+                  {AGENT_ICONS[streamingAgent]}&nbsp;
+                  {streamingAgent === 'Moderator'
+                    ? 'Moderator synthesizing…'
+                    : `${AGENT_DISPLAY[streamingAgent] ?? streamingAgent} speaking…`}
+                </span>
+              </>
+            )}
+            {status === 'waiting-input' && <><span className="dot dot--pulse" style={{ background: '#fbbf24' }} /> Waiting for your input…</> }
+            {status === 'error'         && <><span className="dot dot--error" /> Debate failed</> }
+          </div>
+          <div className="debate-status-bar__actions">
+            <button
+              className={`tts-toggle${ttsEnabled ? ' tts-toggle--on' : ''}`}
+              title={ttsEnabled ? 'Mute agent voices' : 'Enable agent voices'}
+              onClick={() => {
+                const next = !ttsEnabled;
+                setTtsEnabled(next);
+                ttsEnabledRef.current = next;
+                if (!next) window.speechSynthesis?.cancel();
+              }}
+            >
+              {ttsEnabled ? '🔊' : '🔇'}
+              <span>{ttsEnabled ? 'Voice On' : 'Voice Off'}</span>
+            </button>
+            {status === 'done' && <span className="arena-done-badge">✓ Complete</span>}
           </div>
         </div>
       )}
 
-      {/* Message feed */}
-      <div className="chat-debate__feed">
-        {messages.map((msg) => {
-          if (msg.role === 'divider') {
-            return (
-              <div key={msg.id} className="chat-divider">
-                <span className="chat-divider__label">{msg.text}</span>
+      {/* ── Agent identity header ── */}
+      <div className="arena-agents-header">
+        {AGENT_KEYS.map(agent => (
+          <div
+            key={agent}
+            className={`arena-agent-card${streamingAgent === agent ? ' arena-agent-card--speaking' : ''}`}
+            data-agent={agent}
+          >
+            <div className="arena-agent-card__icon">{AGENT_ICONS[agent]}</div>
+            <div className="arena-agent-card__info">
+              <div className="arena-agent-card__name" style={{ color: AGENT_COLORS[agent] }}>
+                {AGENT_DISPLAY[agent]}
               </div>
-            );
-          }
-
-          if (msg.role === 'user') {
-            return (
-              <div key={msg.id} className={`chat-bubble chat-bubble--user${msg.isUserInput ? ' chat-bubble--user-input' : ''}`}>
-                <div className="chat-bubble__header chat-bubble__header--right">
-                  <span className="chat-bubble__name" style={{ color: '#94a3b8' }}>
-                    {msg.isUserInput ? '💬 You' : '📝 Your Decision'}
-                  </span>
-                </div>
-                <div className="chat-bubble__body">{msg.text}</div>
-              </div>
-            );
-          }
-
-          // Agent bubble
-          const color = AGENT_COLORS[msg.agentType!] ?? '#888';
-          const icon  = AGENT_ICONS[msg.agentType!]  ?? '🤖';
-          const name  = AGENT_DISPLAY[msg.agentType!] ?? msg.agentType;
-          const isMod = msg.agentType === 'Moderator';
-
-          return (
-            <div
-              key={msg.id}
-              className={`chat-bubble chat-bubble--agent${isMod ? ' chat-bubble--moderator' : ''}`}
-              data-agent={msg.agentType}
-            >
-              <div className="chat-bubble__header">
-                <span className="chat-bubble__avatar" style={{ background: color + '22', border: `1px solid ${color}44` }}>
-                  {icon}
-                </span>
-                <span className="chat-bubble__name" style={{ color }}>
-                  {name}
-                </span>
-                {msg.round != null && msg.round > 0 && (
-                  <span className="chat-bubble__round">R{msg.round}</span>
-                )}
-              </div>
-              {(() => {
-                const typed = displayedTexts[msg.id];
-                const displayText = typed !== undefined ? typed : msg.text;
-                const isCursorVisible = typed !== undefined
-                  ? typed.length < msg.text.length || msg.isStreaming
-                  : msg.isStreaming && msg.text.length > 0;
-                return (
-                  <div className="chat-bubble__body">
-                    {displayText || (msg.isStreaming
-                      ? <span className="thinking-indicator">thinking<span className="dots"><span>.</span><span>.</span><span>.</span></span></span>
-                      : null
-                    )}
-                    {isCursorVisible && <span className="typing-cursor">▌</span>}
-                  </div>
-                );
-              })()}
+              <div className="arena-agent-card__title">{AGENT_TITLES[agent]}</div>
             </div>
-          );
-        })}
-
-        <div ref={bottomRef} />
-        {verdictData && (
-          <VerdictCard score={verdictData.confidenceScore} recommendation={verdictData.recommendation} />
-        )}
+            {streamingAgent === agent && (
+              <div className="arena-wave">
+                <span className="arena-wave__bar" data-agent={agent} />
+                <span className="arena-wave__bar" data-agent={agent} style={{ animationDelay: '0.1s' }} />
+                <span className="arena-wave__bar" data-agent={agent} style={{ animationDelay: '0.2s' }} />
+                <span className="arena-wave__bar" data-agent={agent} style={{ animationDelay: '0.3s' }} />
+                <span className="arena-wave__bar" data-agent={agent} style={{ animationDelay: '0.4s' }} />
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* User input box — shown when backend fires WaitingForUserInput */}
+      {/* ── Rounds ── */}
+      {rounds.map(round => (
+        <div key={round.roundNumber} className="arena-round">
+          <div className="arena-round__banner">
+            <span className="arena-round__label">Round {round.roundNumber}</span>
+          </div>
+          <div className="arena-columns">
+            {AGENT_KEYS.map(agent => {
+              const msg = round.agents[agent];
+              const typed = msg ? displayedTexts[msg.id] : undefined;
+              const displayText = typed !== undefined ? typed : (msg?.text ?? '');
+              const isCursorVisible = !!msg?.isStreaming && streamingAgent === agent;
+              const isWaiting = !msg && !!streamingAgent && streamingAgent !== 'Moderator';
+
+              return (
+                <div
+                  key={agent}
+                  className={`arena-column${msg?.isStreaming ? ' arena-column--streaming' : ''}${isWaiting ? ' arena-column--waiting' : ''}`}
+                  data-agent={agent}
+                >
+                  {msg ? (
+                    <div className="arena-column__body">
+                      {displayText || (msg.isStreaming
+                        ? <span className="thinking-indicator">thinking<span className="dots"><span>.</span><span>.</span><span>.</span></span></span>
+                        : null
+                      )}
+                      {isCursorVisible && (
+                        <span className="typing-cursor" style={{ color: AGENT_COLORS[agent] }}>▌</span>
+                      )}
+                      {!msg.isStreaming && msg.text && (
+                        <button
+                          className="column-speak-btn"
+                          title={`Listen to ${AGENT_DISPLAY[agent]}`}
+                          onClick={() => speakText(msg.text, agent)}
+                        >
+                          🔊
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="arena-column__empty">
+                      {isWaiting && (
+                        <span className="waiting-dots"><span>·</span><span>·</span><span>·</span></span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {/* ── User mid-debate input ── */}
+      {userInput && (
+        <div className="arena-user-bubble">
+          <div className="arena-user-bubble__label">💬 Your Perspective</div>
+          <div className="arena-user-bubble__text">{userInput.text}</div>
+        </div>
+      )}
+
+      {/* ── Moderator Synthesis Panel ── */}
+      {moderator && (
+        <ModeratorPanel
+          msg={moderator}
+          displayedTexts={displayedTexts}
+          isStreaming={streamingAgent === 'Moderator'}
+        />
+      )}
+
+      {/* ── Verdict card ── */}
+      {verdictData && (
+        <VerdictCard score={verdictData.confidenceScore} recommendation={verdictData.recommendation} />
+      )}
+
+      {/* ── User input box (WaitingForUserInput) ── */}
       {status === 'waiting-input' && !inputSubmitted && (
         <div className="chat-input-panel">
           <div className="chat-input-panel__title">
@@ -489,6 +626,56 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           <p className="chat-input-panel__hint">Ctrl + Enter to send • Round 2 starts automatically in 5 min</p>
         </div>
       )}
+
+      <div ref={bottomRef} />
+    </div>
+  );
+}
+
+// ── Moderator Panel ───────────────────────────────────────────────────────────
+
+function ModeratorPanel({
+  msg,
+  displayedTexts,
+  isStreaming,
+}: {
+  msg: ChatMessage;
+  displayedTexts: Record<string, string>;
+  isStreaming: boolean;
+}) {
+  const typed = displayedTexts[msg.id];
+  const displayText = typed !== undefined ? typed : msg.text;
+  return (
+    <div className={`moderator-panel${msg.isStreaming ? ' moderator-panel--active' : ''}`}>
+      <div className="moderator-panel__header">
+        <div className="moderator-panel__icon">🧠</div>
+        <div>
+          <div className="moderator-panel__name">Moderator AI</div>
+          <div className="moderator-panel__subtitle">Synthesis &amp; Recommendation</div>
+        </div>
+        {isStreaming && (
+          <div className="moderator-panel__live">
+            <span className="dot dot--pulse" style={{ background: 'var(--moderator)' }} />
+            Synthesizing…
+          </div>
+        )}
+      </div>
+      <div className="moderator-panel__body">
+        {displayText || (msg.isStreaming
+          ? <span className="thinking-indicator">synthesizing<span className="dots"><span>.</span><span>.</span><span>.</span></span></span>
+          : null
+        )}
+        {isStreaming && <span className="typing-cursor" style={{ color: 'var(--moderator)' }}>▌</span>}
+        {!msg.isStreaming && msg.text && (
+          <button
+            className="column-speak-btn column-speak-btn--mod"
+            title="Listen to Moderator synthesis"
+            onClick={() => speakText(msg.text, 'Moderator')}
+          >
+            🔊 Listen
+          </button>
+        )}
+      </div>
     </div>
   );
 }

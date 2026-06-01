@@ -1501,6 +1501,369 @@ a:hover { color: var(--accent2); }
   cursor: pointer;
   transition: all 0.15s;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DEBATE ARENA — 3-column side-by-side layout
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.debate-arena {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.25rem 0;
+}
+
+/* ── Status bar ─────────────────────────────────────────────────────────── */
+.debate-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.arena-speaking-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.arena-done-badge {
+  background: rgba(52,211,153,0.15);
+  color: #34d399;
+  border: 1px solid rgba(52,211,153,0.3);
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ── Agent identity header cards ────────────────────────────────────────── */
+.arena-agents-header {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.arena-agent-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.arena-agent-card[data-agent="Strategist"]  { border-top: 3px solid var(--strategist); }
+.arena-agent-card[data-agent="RiskAnalyst"] { border-top: 3px solid var(--risk); }
+.arena-agent-card[data-agent="Engineer"]    { border-top: 3px solid var(--engineer); }
+
+/* Glowing state when agent is speaking */
+.arena-agent-card--speaking[data-agent="Strategist"] {
+  background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 100%);
+  animation: arena-glow-s 2s ease-in-out infinite;
+}
+.arena-agent-card--speaking[data-agent="RiskAnalyst"] {
+  background: linear-gradient(135deg, rgba(248,113,113,0.12) 0%, rgba(248,113,113,0.04) 100%);
+  animation: arena-glow-r 2s ease-in-out infinite;
+}
+.arena-agent-card--speaking[data-agent="Engineer"] {
+  background: linear-gradient(135deg, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.04) 100%);
+  animation: arena-glow-e 2s ease-in-out infinite;
+}
+@keyframes arena-glow-s {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(99,102,241,0.35), 0 0 22px rgba(99,102,241,0.14); }
+  50%       { box-shadow: 0 0 0 1px rgba(99,102,241,0.60), 0 0 40px rgba(99,102,241,0.28); }
+}
+@keyframes arena-glow-r {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(248,113,113,0.35), 0 0 22px rgba(248,113,113,0.14); }
+  50%       { box-shadow: 0 0 0 1px rgba(248,113,113,0.60), 0 0 40px rgba(248,113,113,0.28); }
+}
+@keyframes arena-glow-e {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(52,211,153,0.35), 0 0 22px rgba(52,211,153,0.14); }
+  50%       { box-shadow: 0 0 0 1px rgba(52,211,153,0.60), 0 0 40px rgba(52,211,153,0.28); }
+}
+
+.arena-agent-card__icon {
+  font-size: 1.3rem;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.arena-agent-card__info { min-width: 0; flex: 1; }
+.arena-agent-card__name { font-weight: 700; font-size: 0.92rem; }
+.arena-agent-card__title {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sound-wave bars shown when agent is speaking */
+.arena-wave {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  height: 22px;
+}
+.arena-wave__bar {
+  width: 3px;
+  border-radius: 2px;
+  animation: arena-wave-bounce 0.8s ease-in-out infinite alternate;
+}
+.arena-agent-card[data-agent="Strategist"]  .arena-wave__bar { background: var(--strategist); }
+.arena-agent-card[data-agent="RiskAnalyst"] .arena-wave__bar { background: var(--risk); }
+.arena-agent-card[data-agent="Engineer"]    .arena-wave__bar { background: var(--engineer); }
+.arena-wave__bar:nth-child(1) { height: 6px;  animation-delay: 0.00s; }
+.arena-wave__bar:nth-child(2) { height: 14px; animation-delay: 0.10s; }
+.arena-wave__bar:nth-child(3) { height: 20px; animation-delay: 0.20s; }
+.arena-wave__bar:nth-child(4) { height: 14px; animation-delay: 0.30s; }
+.arena-wave__bar:nth-child(5) { height: 6px;  animation-delay: 0.40s; }
+@keyframes arena-wave-bounce {
+  from { transform: scaleY(0.35); opacity: 0.55; }
+  to   { transform: scaleY(1.00); opacity: 1.00; }
+}
+
+/* ── Round banners ───────────────────────────────────────────────────────── */
+.arena-round {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: arena-fade-in 0.4s ease;
+}
+@keyframes arena-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.arena-round__banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.arena-round__banner::before,
+.arena-round__banner::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.arena-round__label {
+  background: rgba(99,102,241,0.1);
+  color: var(--accent);
+  border: 1px solid rgba(99,102,241,0.25);
+  padding: 0.2rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Agent response columns ──────────────────────────────────────────────── */
+.arena-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+.arena-column {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  min-height: 72px;
+  transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  animation: arena-fade-in 0.35s ease;
+}
+.arena-column[data-agent="Strategist"]  { border-top: 2px solid rgba(99,102,241,0.40); }
+.arena-column[data-agent="RiskAnalyst"] { border-top: 2px solid rgba(248,113,113,0.40); }
+.arena-column[data-agent="Engineer"]    { border-top: 2px solid rgba(52,211,153,0.40); }
+
+/* Streaming (active) state */
+.arena-column--streaming[data-agent="Strategist"] {
+  border-top-color: var(--strategist);
+  background: linear-gradient(160deg, rgba(99,102,241,0.09) 0%, rgba(99,102,241,0.03) 100%);
+  box-shadow: 0 0 0 1px rgba(99,102,241,0.18), 0 6px 24px rgba(99,102,241,0.08);
+}
+.arena-column--streaming[data-agent="RiskAnalyst"] {
+  border-top-color: var(--risk);
+  background: linear-gradient(160deg, rgba(248,113,113,0.09) 0%, rgba(248,113,113,0.03) 100%);
+  box-shadow: 0 0 0 1px rgba(248,113,113,0.18), 0 6px 24px rgba(248,113,113,0.08);
+}
+.arena-column--streaming[data-agent="Engineer"] {
+  border-top-color: var(--engineer);
+  background: linear-gradient(160deg, rgba(52,211,153,0.09) 0%, rgba(52,211,153,0.03) 100%);
+  box-shadow: 0 0 0 1px rgba(52,211,153,0.18), 0 6px 24px rgba(52,211,153,0.08);
+}
+/* Waiting (other agents while one is speaking) */
+.arena-column--waiting { opacity: 0.35; }
+
+.arena-column__body {
+  font-size: 0.88rem;
+  line-height: 1.72;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.arena-column__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--text-dim);
+}
+.waiting-dots { font-size: 1.3rem; letter-spacing: 0.2em; color: var(--text-dim); }
+.waiting-dots span { animation: blink 1.3s ease-in-out infinite; }
+.waiting-dots span:nth-child(2) { animation-delay: 0.2s; }
+.waiting-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── User mid-debate bubble ───────────────────────────────────────────────── */
+.arena-user-bubble {
+  align-self: flex-end;
+  max-width: 65%;
+  background: linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(168,85,247,0.10) 100%);
+  border: 1px solid rgba(99,102,241,0.30);
+  border-radius: 16px 16px 4px 16px;
+  padding: 0.875rem 1.1rem;
+  animation: slide-in-right 0.3s ease;
+}
+.arena-user-bubble__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+.arena-user-bubble__text {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* ── Moderator synthesis panel ───────────────────────────────────────────── */
+.moderator-panel {
+  background: linear-gradient(135deg, rgba(168,85,247,0.10) 0%, rgba(168,85,247,0.04) 100%);
+  border: 1px solid rgba(168,85,247,0.30);
+  border-radius: 16px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  animation: arena-fade-in 0.5s ease;
+}
+.moderator-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--moderator), transparent);
+}
+.moderator-panel--active {
+  border-color: rgba(168,85,247,0.50);
+  animation: moderator-pulse 2.2s ease-in-out infinite;
+}
+@keyframes moderator-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(168,85,247,0.22), 0 0 20px rgba(168,85,247,0.09); }
+  50%       { box-shadow: 0 0 0 1px rgba(168,85,247,0.48), 0 0 44px rgba(168,85,247,0.22); }
+}
+.moderator-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(168,85,247,0.18);
+}
+.moderator-panel__icon {
+  font-size: 1.4rem;
+  width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(168,85,247,0.13);
+  border: 1px solid rgba(168,85,247,0.28);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.moderator-panel__name     { font-weight: 700; font-size: 1rem; color: #c084fc; }
+.moderator-panel__subtitle { font-size: 0.73rem; color: var(--text-dim); margin-top: 0.1rem; }
+.moderator-panel__live {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #c084fc;
+  font-weight: 600;
+}
+
+/* ── TTS controls ────────────────────────────────────────────────────────── */
+.debate-status-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.tts-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.3rem 0.7rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tts-toggle:hover  { border-color: rgba(99,102,241,0.4); color: var(--text); }
+.tts-toggle--on    { border-color: rgba(99,102,241,0.35); color: var(--accent); background: rgba(99,102,241,0.08); }
+.tts-toggle span   { font-size: 0.75rem; }
+
+/* Per-column listen button (bottom-right of a filled column) */
+.column-speak-btn {
+  display: block;
+  margin-top: 0.6rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.4;
+}
+.column-speak-btn:hover { border-color: rgba(99,102,241,0.45); color: var(--text); background: rgba(99,102,241,0.07); }
+
+/* Moderator listen button — bigger, inline with text */
+.column-speak-btn--mod {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 1rem;
+  padding: 0.3rem 0.8rem;
+  border-color: rgba(168,85,247,0.3);
+  color: #c084fc;
+  font-size: 0.8rem;
+}
+.column-speak-btn--mod:hover { border-color: rgba(168,85,247,0.6); background: rgba(168,85,247,0.1); }
+.moderator-panel__body {
+  font-size: 0.93rem;
+  line-height: 1.82;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Responsive: stack on mobile ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .arena-agents-header { grid-template-columns: 1fr; }
+  .arena-columns       { grid-template-columns: 1fr; }
+  .arena-user-bubble   { max-width: 92%; }
+}
 .modal__tab.active {
   background: var(--surface-hover);
   color: var(--text);

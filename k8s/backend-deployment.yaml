@@ -23,13 +23,14 @@ spec:
               value: Production
             - name: ASPNETCORE_URLS
               value: http://+:8080
-            - name: ConnectionStrings__DefaultConnection
-              value: "Host=postgres;Port=5432;Database=multimind;Username=postgres;Password=$(DB_PASSWORD)"
+            # DB_PASSWORD must be defined BEFORE ConnectionStrings so $(DB_PASSWORD) substitution works
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: multimind-secrets
                   key: db-password
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=postgres;Port=5432;Database=multimind;Username=postgres;Password=$(DB_PASSWORD)"
             - name: Jwt__Key
               valueFrom:
                 secretKeyRef:
@@ -47,9 +48,11 @@ spec:
                   name: multimind-secrets
                   key: openai-api-key
             - name: OpenAI__Model
-              value: openai/gpt-4o
+              value: anthropic/claude-sonnet-4.5
             - name: OpenAI__BaseUrl
               value: https://openrouter.ai/api/v1
+            - name: Frontend__Url
+              value: "http://192.168.49.2:30080"
           readinessProbe:
             httpGet:
               path: /health
@@ -62,7 +65,10 @@ kind: Service
 metadata:
   name: backend
 spec:
+  type: NodePort
   selector:
     app: backend
   ports:
     - port: 8080
+      targetPort: 8080
+      nodePort: 30081
