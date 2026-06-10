@@ -99,7 +99,7 @@ export default function SessionPage() {
       <header className="session-header">
         <Link to="/dashboard" className="btn-ghost">← Back</Link>
         <h1>{isLive ? 'Live Debate' : 'Debate Results'}</h1>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="session-actions">
           {!isLive && (
             <>
               <button

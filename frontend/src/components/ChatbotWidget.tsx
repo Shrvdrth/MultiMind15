@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import { API_BASE_URL } from "../api/config";
 
 interface Message {
   role: "user" | "assistant";
@@ -12,8 +14,6 @@ const SUGGESTED = [
   "How do I export a session?",
   "What is the confidence score?",
 ];
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5125/api";
 
 export default function ChatbotWidget() {
   const [open, setOpen] = useState(false);
@@ -54,7 +54,7 @@ export default function ChatbotWidget() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${API_BASE}/chatbot/message`, {
+      const res = await fetch(`${API_BASE_URL}/chatbot/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -125,14 +125,6 @@ export default function ChatbotWidget() {
       e.preventDefault();
       send(input);
     }
-  };
-
-  const renderMarkdown = (text: string) => {
-    return text
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/`(.+?)`/g, '<code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:.85em">$1</code>')
-      .replace(/^- (.+)/gm, '<span style="display:block;padding-left:12px">• $1</span>')
-      .replace(/\n/g, "<br/>");
   };
 
   return (
@@ -332,8 +324,28 @@ export default function ChatbotWidget() {
                   border: m.role === "assistant" ? "1px solid #252a3d" : "none",
                   position: "relative",
                 }}
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }}
-              />
+              >
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p style={{ margin: 0 }}>{children}</p>,
+                    code: ({ children }) => (
+                      <code style={{
+                        background: "rgba(255,255,255,.1)",
+                        padding: "1px 5px",
+                        borderRadius: 4,
+                        fontFamily: "monospace",
+                        fontSize: ".85em",
+                      }}>
+                        {children}
+                      </code>
+                    ),
+                    ul: ({ children }) => <ul style={{ margin: 0, paddingLeft: 18 }}>{children}</ul>,
+                    ol: ({ children }) => <ol style={{ margin: 0, paddingLeft: 18 }}>{children}</ol>,
+                  }}
+                >
+                  {m.content}
+                </ReactMarkdown>
+              </div>
               {m.streaming && (
                 <span
                   style={{

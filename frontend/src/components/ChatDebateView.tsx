@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { submitUserInput } from '../api/debate';
 import type { DebateSessionDto } from '../api/debate';
+import { API_BASE_URL } from '../api/config';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -209,7 +210,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   useEffect(() => {
     if (completedSession || !token) return;
 
-    const url = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5125/api'}/debate/${sessionId}/stream`;
+    const url = `${API_BASE_URL}/debate/${sessionId}/stream`;
     const controller = new AbortController();
 
     const streamSSE = async () => {

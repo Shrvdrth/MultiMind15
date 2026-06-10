@@ -158,7 +158,7 @@ export default function DashboardPage() {
               maxLength={MAX_LENGTH}
               disabled={loading}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="form-meta-row">
               <div className="form-hint">
                 <span>💡</span>
                 <span>Try: <em
@@ -258,7 +258,7 @@ function HistorySection() {
                 <span className="history-prompt">
                   {item.originalPrompt.slice(0, 90)}{item.originalPrompt.length > 90 ? '…' : ''}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                <div className="history-item-meta">
                   {item.createdAt && (
                     <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
                       {new Date(item.createdAt).toLocaleDateString()}
