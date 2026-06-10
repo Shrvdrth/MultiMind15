@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -142,6 +143,33 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseCors("Frontend");
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true &&
+        !context.Request.Path.StartsWithSegments("/api/auth"))
+    {
+        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)
+                       ?? context.User.FindFirst("sub");
+
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        var db = context.RequestServices.GetRequiredService<AppDbContext>();
+        var isActive = await db.Users.IgnoreQueryFilters()
+            .AnyAsync(u => u.Id == userId && u.IsActive && !u.IsDeleted);
+
+        if (!isActive)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+    }
+
+    await next();
+});
 app.UseAuthorization();
 
 // Health check for Railway / Docker
