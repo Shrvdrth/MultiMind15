@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { API_BASE_URL } from "../api/config";
+import { useAuth } from "../context/AuthContext";
 
 interface Message {
   role: "user" | "assistant";
@@ -16,6 +17,7 @@ const SUGGESTED = [
 ];
 
 export default function ChatbotWidget() {
+  const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -127,6 +129,8 @@ export default function ChatbotWidget() {
       send(input);
     }
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <>

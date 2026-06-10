@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { submitUserInput } from '../api/debate';
+import { skipUserInput, submitUserInput } from '../api/debate';
 import type { DebateSessionDto } from '../api/debate';
 import { API_BASE_URL } from '../api/config';
 
@@ -444,9 +444,15 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
     }
   };
 
-  const skipInput = () => {
+  const skipInput = async () => {
     setInputSubmitted(true);
-    setStatus('live');
+    try {
+      await skipUserInput(sessionId);
+    } catch {
+      // If the backend already moved on, keep the UI in live mode.
+    } finally {
+      setStatus('live');
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────

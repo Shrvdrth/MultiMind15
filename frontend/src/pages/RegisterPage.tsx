@@ -22,7 +22,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const res = await registerApi(email, password);
-      login(res.data.token, res.data.email, res.data.role ?? 'User', res.data.refreshToken ?? '');
+      login(res.data.token, res.data.userId, res.data.email, res.data.role ?? 'User', res.data.refreshToken ?? '');
       navigate('/dashboard');
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

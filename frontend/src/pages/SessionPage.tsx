@@ -5,6 +5,7 @@ import type { DebateSessionDto } from '../api/debate';
 import AnalyticsPanel from '../components/AnalyticsPanel';
 import { ChatDebateView } from '../components/ChatDebateView';
 import { CommentSection } from '../components/CommentSection';
+import { useAuth } from '../context/AuthContext';
 
 const POLL_INTERVAL_MS = 4000;
 
@@ -16,6 +17,7 @@ export default function SessionPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [liveMode, setLiveMode] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { userId } = useAuth();
 
   useEffect(() => {
     if (!sessionId) return;
@@ -177,7 +179,7 @@ export default function SessionPage() {
           )}
 
           {session.status === 'completed' && sessionId && (
-            <CommentSection sessionId={sessionId} userId={session.sessionId ?? null} />
+            <CommentSection sessionId={sessionId} userId={userId} />
           )}
 
           <div className="export-row">
