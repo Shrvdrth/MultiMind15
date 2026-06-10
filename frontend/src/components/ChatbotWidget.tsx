@@ -29,6 +29,7 @@ export default function ChatbotWidget() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const streamedResponseRef = useRef("");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,7 +70,7 @@ export default function ChatbotWidget() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let full = "";
+      streamedResponseRef.current = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -83,13 +84,13 @@ export default function ChatbotWidget() {
           const payload = line.slice(6).trim();
           if (payload === "[DONE]") break;
           try {
-            const parsed = JSON.parse(payload);
-            full += parsed.chunk ?? "";
+            const parsed = JSON.parse(payload) as { chunk?: string };
+            streamedResponseRef.current = `${streamedResponseRef.current}${parsed.chunk ?? ""}`;
             setMessages((prev) => {
               const updated = [...prev];
               updated[updated.length - 1] = {
                 role: "assistant",
-                content: full,
+                content: streamedResponseRef.current,
                 streaming: true,
               };
               return updated;
@@ -102,7 +103,7 @@ export default function ChatbotWidget() {
 
       setMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: full };
+        updated[updated.length - 1] = { role: "assistant", content: streamedResponseRef.current };
         return updated;
       });
     } catch (err: unknown) {

@@ -5,6 +5,11 @@ import { getStats } from '../api/debate';
 import type { UserProfile } from '../api/auth';
 import type { DebateStats } from '../api/debate';
 
+function getErrorMessage(err: unknown, fallback: string) {
+  const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+  return message ?? fallback;
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<DebateStats | null>(null);
@@ -34,8 +39,8 @@ export default function ProfilePage() {
       const r = await updateProfile(displayName);
       setProfileMsg(r.data.message);
       setProfile(p => p ? { ...p, displayName: r.data.displayName } : p);
-    } catch (err: any) {
-      setProfileErr(err?.response?.data?.message ?? 'Failed to update profile.');
+    } catch (err: unknown) {
+      setProfileErr(getErrorMessage(err, 'Failed to update profile.'));
     } finally {
       setSavingProfile(false);
     }
@@ -51,8 +56,8 @@ export default function ProfilePage() {
       const r = await changePassword(pwForm.current, pwForm.next);
       setPwMsg(r.data.message);
       setPwForm({ current: '', next: '', confirm: '' });
-    } catch (err: any) {
-      setPwErr(err?.response?.data?.message ?? 'Failed to change password.');
+    } catch (err: unknown) {
+      setPwErr(getErrorMessage(err, 'Failed to change password.'));
     } finally {
       setSavingPw(false);
     }

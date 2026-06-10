@@ -26,8 +26,9 @@ export default function ResetPasswordPage() {
     try {
       await resetPassword(form.email, form.token, form.newPassword);
       navigate('/login', { state: { message: 'Password reset! You can now sign in.' } });
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Invalid or expired token. Please try again.');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(message ?? 'Invalid or expired token. Please try again.');
     } finally {
       setLoading(false);
     }

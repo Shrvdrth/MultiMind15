@@ -24,8 +24,9 @@ export default function RegisterPage() {
       const res = await registerApi(email, password);
       login(res.data.token, res.data.email, res.data.role ?? 'User', res.data.refreshToken ?? '');
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed.');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(message || 'Registration failed.');
     } finally {
       setLoading(false);
     }

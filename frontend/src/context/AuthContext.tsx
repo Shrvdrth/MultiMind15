@@ -68,7 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
     return () => api.interceptors.response.eject(interceptor);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

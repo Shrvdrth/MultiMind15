@@ -212,7 +212,9 @@ function HistorySection() {
       setHistory(h => h.map(item =>
         item.id === id ? { ...item, isFavourite: res.data.isFavourite } : item
       ));
-    } catch {}
+    } catch {
+      // Favourite state is optimistic-only; keep the current list unchanged on failure.
+    }
   };
 
   return (

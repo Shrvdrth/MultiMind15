@@ -84,7 +84,9 @@ export default function SessionPage() {
     try {
       const res = await toggleFavourite(sessionId);
       setIsFavourite(res.data.isFavourite);
-    } catch {}
+    } catch {
+      // Leave the current favourite state unchanged if the request fails.
+    }
   };
 
   const copyLink = async () => {
