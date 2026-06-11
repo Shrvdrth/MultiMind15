@@ -217,6 +217,38 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
 
     const url = `${API_BASE_URL}/debate/${sessionId}/stream`;
     const controller = new AbortController();
+    let terminalEventReceived = false;
+
+    const recoverFromStreamEnd = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/debate/${sessionId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          setStatus('error');
+          return;
+        }
+
+        const latest = await res.json() as DebateSessionDto;
+        if (latest.status === 'completed') {
+          if (latest.synthesis) {
+            setVerdictData({
+              confidenceScore: latest.synthesis.confidenceScore,
+              recommendation: latest.synthesis.recommendation,
+            });
+          }
+          setStatus('done');
+          setTimeout(() => onComplete?.(), 300);
+        } else if (latest.status === 'failed') {
+          setStatus('error');
+        } else {
+          setStatus('error');
+        }
+      } catch (err: unknown) {
+        if ((err as { name?: string }).name !== 'AbortError') setStatus('error');
+      }
+    };
 
     const streamSSE = async () => {
       try {
@@ -245,6 +277,9 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
               handleEvent(evt);
             } catch { /* skip malformed */ }
           }
+        }
+        if (!controller.signal.aborted && !terminalEventReceived) {
+          await recoverFromStreamEnd();
         }
       } catch (err: unknown) {
         if ((err as { name?: string }).name !== 'AbortError') setStatus('error');
@@ -387,6 +422,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           break;
 
         case 'DebateComplete':
+          terminalEventReceived = true;
           window.speechSynthesis?.cancel();
           try {
             const payload = JSON.parse(evt.text ?? '{}') as { confidenceScore?: number; recommendation?: string };
@@ -397,6 +433,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           break;
 
         case 'Error':
+          terminalEventReceived = true;
           setStatus('error');
           break;
       }

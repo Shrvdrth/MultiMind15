@@ -15,7 +15,6 @@ export default function SessionPage() {
   const [error, setError] = useState('');
   const [isFavourite, setIsFavourite] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [liveMode, setLiveMode] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { userId } = useAuth();
 
@@ -39,10 +38,6 @@ export default function SessionPage() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [sessionId]);
 
-  useEffect(() => {
-    if (session?.status === 'running') setLiveMode(true);
-  }, [session?.status]);
-
   if (error) return (
     <div className="page-error">
       <p>{error}</p>
@@ -65,7 +60,7 @@ export default function SessionPage() {
     </div>
   );
 
-  const isLive = liveMode || session.status === 'running';
+  const isLive = session.status === 'running';
 
   const totalWords = session.rounds
     .flatMap(r => r.responses)
@@ -192,7 +187,6 @@ export default function SessionPage() {
           sessionId={sessionId}
           userPrompt={session.originalPrompt}
           onComplete={() => {
-            setLiveMode(false);
             getSession(sessionId).then(r => setSession(r.data));
           }}
         />

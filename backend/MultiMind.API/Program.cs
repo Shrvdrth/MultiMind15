@@ -101,7 +101,24 @@ var app = builder.Build();
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    const int maxAttempts = 24;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            logger.LogWarning(ex,
+                "[Startup] Database migration attempt {Attempt}/{MaxAttempts} failed; retrying in 5s.",
+                attempt, maxAttempts);
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -110,17 +127,20 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-// ── Cleanup: mark any sessions stuck in "running" state as "failed" ──
+// ── Cleanup: mark only old sessions stuck in "running" state as "failed" ──
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var stuckSessions = db.DebateSessions.Where(s => s.Status == "running").ToList();
+    var staleCutoff = DateTime.UtcNow.AddHours(-2);
+    var stuckSessions = db.DebateSessions
+        .Where(s => s.Status == "running" && s.CreatedAt < staleCutoff)
+        .ToList();
     if (stuckSessions.Count > 0)
     {
         foreach (var s in stuckSessions) s.Status = "failed";
         db.SaveChanges();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning("[Startup] Marked {Count} stuck 'running' sessions as 'failed'.", stuckSessions.Count);
+        logger.LogWarning("[Startup] Marked {Count} stale 'running' sessions as 'failed'.", stuckSessions.Count);
     }
 
     // Promote earliest registered user to Admin (idempotent)
