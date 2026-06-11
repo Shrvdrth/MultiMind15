@@ -18,13 +18,10 @@ export default function FutureBusinessOutlook({ prompt, synthesisText }: FutureB
           <span className="future-outlook__eyebrow" style={{ color: profile.accent }}>
             {profile.label}
           </span>
-          <h2 id="future-outlook-title">Future Business Outlook</h2>
-          <p>
-            A forward-looking strategy brief that turns the debate topic into market signals,
-            opportunities, risks, and next moves.
-          </p>
+          <h2 id="future-outlook-title">{profile.outlookTitle}</h2>
+          <p>{profile.outlookDescription}</p>
         </div>
-        <SpeechControls text={speechText} label="Future Business Outlook" />
+        <SpeechControls text={speechText} label={profile.outlookTitle} />
       </div>
 
       <div className="future-outlook__grid">

@@ -3,6 +3,8 @@ export type TopicCategory = 'ai' | 'technology' | 'marketing' | 'ecommerce' | 'f
 export interface TopicProfile {
   category: TopicCategory;
   label: string;
+  outlookTitle: string;
+  outlookDescription: string;
   visual: string;
   accent: string;
 }
@@ -16,42 +18,56 @@ const TOPIC_PROFILES: Record<TopicCategory, TopicProfile> = {
   ai: {
     category: 'ai',
     label: 'AI transformation',
+    outlookTitle: 'Future AI Outlook',
+    outlookDescription: 'A forward-looking technology brief for AI adoption, automation impact, governance, and market opportunity.',
     visual: '/topic-ai.svg',
     accent: '#a855f7',
   },
   technology: {
     category: 'technology',
     label: 'Technology strategy',
+    outlookTitle: 'Technology Future Outlook',
+    outlookDescription: 'A technical strategy brief covering platform direction, architecture risks, adoption trends, and innovation paths.',
     visual: '/topic-technology.svg',
     accent: '#34d399',
   },
   marketing: {
     category: 'marketing',
     label: 'Marketing growth',
+    outlookTitle: 'Marketing Growth Outlook',
+    outlookDescription: 'A growth brief focused on audience behavior, campaign direction, brand positioning, and market engagement.',
     visual: '/topic-marketing.svg',
     accent: '#f59e0b',
   },
   ecommerce: {
     category: 'ecommerce',
     label: 'E-commerce expansion',
+    outlookTitle: 'E-commerce Future Outlook',
+    outlookDescription: 'A retail strategy brief covering customer behavior, channel expansion, conversion risk, and growth opportunities.',
     visual: '/topic-ecommerce.svg',
     accent: '#38bdf8',
   },
   finance: {
     category: 'finance',
     label: 'Financial outlook',
+    outlookTitle: 'Financial Future Outlook',
+    outlookDescription: 'A financial planning brief focused on ROI, cost exposure, investment timing, and scenario-based decisions.',
     visual: '/topic-business.svg',
     accent: '#22c55e',
   },
   operations: {
     category: 'operations',
     label: 'Operational excellence',
+    outlookTitle: 'Operations Future Outlook',
+    outlookDescription: 'An operations brief covering efficiency, workflow design, process risk, and execution readiness.',
     visual: '/topic-business.svg',
     accent: '#6366f1',
   },
   general: {
     category: 'general',
-    label: 'Business strategy',
+    label: 'Strategic decision',
+    outlookTitle: 'Strategic Future Outlook',
+    outlookDescription: 'A strategic brief that turns the question into future signals, practical risks, and recommended next moves.',
     visual: '/topic-business.svg',
     accent: '#6366f1',
   },
@@ -127,7 +143,7 @@ export function buildBusinessOutlook(prompt: string, synthesisText?: string): Ou
     ],
     technology: [
       {
-        title: 'Market outlook',
+        title: 'Technology outlook',
         items: [
           'Technology buyers will continue prioritizing platforms that reduce integration friction and improve operational resilience.',
           'Cloud-native, API-first, and analytics-driven products are positioned for stronger long-term adoption.',
@@ -217,7 +233,7 @@ export function buildBusinessOutlook(prompt: string, synthesisText?: string): Ou
     ],
     general: [
       {
-        title: 'Market outlook',
+        title: 'Future outlook',
         items: shared.market,
       },
       {
@@ -246,7 +262,7 @@ export function buildBusinessOutlook(prompt: string, synthesisText?: string): Ou
 
 export function outlookToSpeech(profile: TopicProfile, sections: OutlookSection[]) {
   return [
-    `Future Business Outlook for ${profile.label}.`,
+    `${profile.outlookTitle} for ${profile.label}.`,
     ...sections.flatMap(section => [
       section.title,
       ...section.items,

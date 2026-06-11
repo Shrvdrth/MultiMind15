@@ -187,13 +187,33 @@ export default function SessionPage() {
 
       {/* ── Live stream OR completed rounds ────────────────── */}
       {isLive && sessionId ? (
-        <ChatDebateView
-          sessionId={sessionId}
-          userPrompt={session.originalPrompt}
-          onComplete={() => {
-            getSession(sessionId).then(r => setSession(r.data));
-          }}
-        />
+        <>
+          <section className="live-focus-panel" style={{ ['--topic-accent' as string]: topicProfile.accent }}>
+            <div className="live-focus-panel__visual" aria-hidden="true">
+              <img src={topicProfile.visual} alt="" />
+            </div>
+            <div className="live-focus-panel__content">
+              <span>{topicProfile.label}</span>
+              <h2>Debate in progress</h2>
+              <p>
+                The agents are comparing strategic upside, risks, feasibility, and future signals for this topic.
+                Keep this page open while the live stream builds the recommendation.
+              </p>
+              <div className="live-focus-panel__steps" aria-label="Live debate stages">
+                <div><strong>01</strong><small>Perspective mapping</small></div>
+                <div><strong>02</strong><small>Cross-agent challenge</small></div>
+                <div><strong>03</strong><small>Moderator synthesis</small></div>
+              </div>
+            </div>
+          </section>
+          <ChatDebateView
+            sessionId={sessionId}
+            userPrompt={session.originalPrompt}
+            onComplete={() => {
+              getSession(sessionId).then(r => setSession(r.data));
+            }}
+          />
+        </>
       ) : (
         <>
           <ChatDebateView

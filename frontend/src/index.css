@@ -686,6 +686,69 @@ select.input option {
 .prompt-card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; font-weight: 600; }
 .prompt-card p { font-size: 1rem; line-height: 1.7; color: var(--text); }
 
+.live-focus-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.65fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--topic-accent, #6366f1) 36%, rgba(255,255,255,0.08));
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--topic-accent, #6366f1) 12%, transparent), rgba(255,255,255,0.035)),
+    rgba(8,12,20,0.52);
+  box-shadow: 0 16px 50px rgba(0,0,0,0.22);
+  overflow: hidden;
+}
+.live-focus-panel__visual img {
+  display: block;
+  width: 100%;
+  max-height: 190px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+}
+.live-focus-panel__content > span {
+  color: var(--topic-accent, var(--accent));
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.live-focus-panel__content h2 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  letter-spacing: -0.035em;
+}
+.live-focus-panel__content p {
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.live-focus-panel__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.live-focus-panel__steps div {
+  padding: 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+}
+.live-focus-panel__steps strong {
+  display: block;
+  color: var(--topic-accent, var(--accent));
+  font-size: 0.78rem;
+}
+.live-focus-panel__steps small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
 .future-outlook {
   margin-top: 2.5rem;
   background: linear-gradient(135deg, rgba(99,102,241,0.10), rgba(52,211,153,0.055));
@@ -2507,6 +2570,10 @@ select.input option {
     grid-template-columns: 1fr;
   }
 
+  .live-focus-panel {
+    grid-template-columns: 1fr;
+  }
+
   .debate-hero-card__visual {
     order: -1;
   }
@@ -2592,6 +2659,10 @@ select.input option {
   .future-outlook,
   .future-outlook-card {
     padding: 1rem;
+  }
+
+  .live-focus-panel__steps {
+    grid-template-columns: 1fr;
   }
 
   .future-outlook__header {
