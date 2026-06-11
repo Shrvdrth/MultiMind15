@@ -70,6 +70,7 @@ export default function SessionPage() {
   const totalWords = session.rounds
     .flatMap(r => r.responses)
     .reduce((sum, r) => sum + r.responseText.split(/\s+/).length, 0);
+  const confidenceLabel = session.synthesis ? `${session.synthesis.confidenceScore}/100` : 'Pending';
 
   const exportDebate = () => {
     const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
@@ -121,6 +122,38 @@ export default function SessionPage() {
           <span className={`status status-${session.status}`}>{session.status}</span>
         </div>
       </header>
+
+      <section className="debate-hero-card" aria-labelledby="debate-hero-title">
+        <div className="debate-hero-card__copy">
+          <span className={`debate-hero-card__eyebrow status status-${session.status}`}>
+            {isLive ? 'Live analysis' : session.status}
+          </span>
+          <h2 id="debate-hero-title">
+            {isLive ? 'Your AI panel is debating the decision' : 'Decision intelligence summary'}
+          </h2>
+          <p>
+            MultiMind brings strategy, risk, engineering, and moderator perspectives into one
+            structured workspace so you can compare trade-offs with confidence.
+          </p>
+          <div className="debate-hero-card__metrics" aria-label="Debate summary metrics">
+            <div>
+              <strong>{session.rounds.length}</strong>
+              <span>Rounds captured</span>
+            </div>
+            <div>
+              <strong>{totalWords.toLocaleString()}</strong>
+              <span>Words analyzed</span>
+            </div>
+            <div>
+              <strong>{confidenceLabel}</strong>
+              <span>Confidence</span>
+            </div>
+          </div>
+        </div>
+        <div className="debate-hero-card__visual" aria-hidden="true">
+          <img src="/debate-constellation.svg" alt="" />
+        </div>
+      </section>
 
       {/* ── Prompt ─────────────────────────────────────────── */}
       <div className="prompt-card">

@@ -195,9 +195,14 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   const [displayedTexts, setDisplayedTexts] = useState<Record<string, string>>({});
   const [verdictData, setVerdictData] = useState<{ confidenceScore: number; recommendation: string } | null>(null);
 
-  // ── TTS ──────────────────────────────────────────────────────────────────────
-  const [ttsEnabled, setTtsEnabled] = useState(true);
-  const ttsEnabledRef = useRef(true);
+  // ── Optional voice / TTS ─────────────────────────────────────────────────────
+  const supportsSpeech = typeof window !== 'undefined'
+    && 'speechSynthesis' in window
+    && 'SpeechSynthesisUtterance' in window;
+  const [ttsEnabled, setTtsEnabled] = useState(() =>
+    supportsSpeech && localStorage.getItem('multimind.voiceEnabled') === 'true'
+  );
+  const ttsEnabledRef = useRef(ttsEnabled);
 
   // ── Static / completed mode — no streaming ──
   useEffect(() => {
@@ -485,16 +490,22 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           <div className="debate-status-bar__actions">
             <button
               className={`tts-toggle${ttsEnabled ? ' tts-toggle--on' : ''}`}
-              title={ttsEnabled ? 'Mute agent voices' : 'Enable agent voices'}
+              aria-pressed={ttsEnabled}
+              disabled={!supportsSpeech}
+              title={supportsSpeech
+                ? (ttsEnabled ? 'Turn off optional agent voices' : 'Enable optional agent voices')
+                : 'Voice playback is not supported in this browser'}
               onClick={() => {
+                if (!supportsSpeech) return;
                 const next = !ttsEnabled;
                 setTtsEnabled(next);
                 ttsEnabledRef.current = next;
+                localStorage.setItem('multimind.voiceEnabled', String(next));
                 if (!next) window.speechSynthesis?.cancel();
               }}
             >
-              {ttsEnabled ? '🔊' : '🔇'}
-              <span>{ttsEnabled ? 'Voice On' : 'Voice Off'}</span>
+              {supportsSpeech ? (ttsEnabled ? '🔊' : '🔇') : '🚫'}
+              <span>{supportsSpeech ? (ttsEnabled ? 'Voice On' : 'Enable Voice') : 'Voice Unavailable'}</span>
             </button>
             {status === 'done' && <span className="arena-done-badge">✓ Complete</span>}
           </div>
@@ -558,7 +569,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
                       {isCursorVisible && (
                         <span className="typing-cursor" style={{ color: AGENT_COLORS[agent] }}>▌</span>
                       )}
-                      {!msg.isStreaming && msg.text && (
+                      {ttsEnabled && !msg.isStreaming && msg.text && (
                         <button
                           className="column-speak-btn"
                           title={`Listen to ${AGENT_DISPLAY[agent]}`}
@@ -596,6 +607,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           msg={moderator}
           displayedTexts={displayedTexts}
           isStreaming={streamingAgent === 'Moderator'}
+          ttsEnabled={ttsEnabled}
         />
       )}
 
@@ -645,10 +657,12 @@ function ModeratorPanel({
   msg,
   displayedTexts,
   isStreaming,
+  ttsEnabled,
 }: {
   msg: ChatMessage;
   displayedTexts: Record<string, string>;
   isStreaming: boolean;
+  ttsEnabled: boolean;
 }) {
   const typed = displayedTexts[msg.id];
   const displayText = typed !== undefined ? typed : msg.text;
@@ -673,7 +687,7 @@ function ModeratorPanel({
           : null
         )}
         {isStreaming && <span className="typing-cursor" style={{ color: 'var(--moderator)' }}>▌</span>}
-        {!msg.isStreaming && msg.text && (
+        {ttsEnabled && !msg.isStreaming && msg.text && (
           <button
             className="column-speak-btn column-speak-btn--mod"
             title="Listen to Moderator synthesis"
