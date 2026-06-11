@@ -5,7 +5,9 @@ import type { DebateSessionDto } from '../api/debate';
 import AnalyticsPanel from '../components/AnalyticsPanel';
 import { ChatDebateView } from '../components/ChatDebateView';
 import { CommentSection } from '../components/CommentSection';
+import FutureBusinessOutlook from '../components/FutureBusinessOutlook';
 import { useAuth } from '../context/AuthContext';
+import { classifyTopic } from '../utils/topicInsights';
 
 const POLL_INTERVAL_MS = 4000;
 
@@ -66,6 +68,7 @@ export default function SessionPage() {
     .flatMap(r => r.responses)
     .reduce((sum, r) => sum + r.responseText.split(/\s+/).length, 0);
   const confidenceLabel = session.synthesis ? `${session.synthesis.confidenceScore}/100` : 'Pending';
+  const topicProfile = classifyTopic(`${session.originalPrompt}\n${session.synthesis?.fullSynthesis ?? ''}`);
 
   const exportDebate = () => {
     const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
@@ -145,8 +148,9 @@ export default function SessionPage() {
             </div>
           </div>
         </div>
-        <div className="debate-hero-card__visual" aria-hidden="true">
-          <img src="/debate-constellation.svg" alt="" />
+        <div className="debate-hero-card__visual" aria-hidden="true" style={{ ['--topic-accent' as string]: topicProfile.accent }}>
+          <img src={topicProfile.visual} alt="" />
+          <span>{topicProfile.label}</span>
         </div>
       </section>
 
@@ -199,10 +203,16 @@ export default function SessionPage() {
           />
 
           {session.rounds.length > 0 && (
-            <AnalyticsPanel
-              rounds={session.rounds}
-              synthesisText={session.synthesis?.fullSynthesis}
-            />
+            <>
+              <FutureBusinessOutlook
+                prompt={session.originalPrompt}
+                synthesisText={session.synthesis?.fullSynthesis}
+              />
+              <AnalyticsPanel
+                rounds={session.rounds}
+                synthesisText={session.synthesis?.fullSynthesis}
+              />
+            </>
           )}
 
           {session.status === 'completed' && sessionId && (

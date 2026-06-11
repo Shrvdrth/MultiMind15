@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { skipUserInput, submitUserInput } from '../api/debate';
 import type { DebateSessionDto } from '../api/debate';
 import { API_BASE_URL } from '../api/config';
+import SpeechControls from './SpeechControls';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,24 +64,6 @@ const AGENT_TITLES: Record<string, string> = {
   RiskAnalyst: 'Risk Officer',
   Engineer:    'Principal Engineer',
 };
-
-// ── Text-to-Speech helper ───────────────────────────────────────────────────
-
-function speakText(text: string, agentType: string) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang   = 'en-US';
-  utterance.volume = 1;
-  switch (agentType) {
-    case 'Strategist':  utterance.pitch = 1.00; utterance.rate = 0.93; break;
-    case 'RiskAnalyst': utterance.pitch = 0.85; utterance.rate = 0.90; break;
-    case 'Engineer':    utterance.pitch = 1.15; utterance.rate = 1.00; break;
-    case 'Moderator':   utterance.pitch = 1.05; utterance.rate = 0.87; break;
-    default:            utterance.pitch = 1.00; utterance.rate = 0.95; break;
-  }
-  window.speechSynthesis.speak(utterance);
-}
 
 // ── Derive 3-column layout from flat messages at render time ──────────────────
 
@@ -202,7 +185,6 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   const [ttsEnabled, setTtsEnabled] = useState(() =>
     supportsSpeech && localStorage.getItem('multimind.voiceEnabled') === 'true'
   );
-  const ttsEnabledRef = useRef(ttsEnabled);
 
   // ── Static / completed mode — no streaming ──
   useEffect(() => {
@@ -341,8 +323,6 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
             const updated = [...prev];
             for (let i = updated.length - 1; i >= 0; i--) {
               if (updated[i].agentType === evt.agentType && updated[i].isStreaming) {
-                if (ttsEnabledRef.current && updated[i].text)
-                  speakText(updated[i].text, evt.agentType ?? '');
                 updated[i] = { ...updated[i], isStreaming: false };
                 break;
               }
@@ -411,8 +391,6 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
             const updated = [...prev];
             for (let i = updated.length - 1; i >= 0; i--) {
               if (updated[i].agentType === 'Moderator' && updated[i].isStreaming) {
-                if (ttsEnabledRef.current && updated[i].text)
-                  speakText(updated[i].text, 'Moderator');
                 updated[i] = { ...updated[i], isStreaming: false };
                 break;
               }
@@ -536,7 +514,6 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
                 if (!supportsSpeech) return;
                 const next = !ttsEnabled;
                 setTtsEnabled(next);
-                ttsEnabledRef.current = next;
                 localStorage.setItem('multimind.voiceEnabled', String(next));
                 if (!next) window.speechSynthesis?.cancel();
               }}
@@ -607,13 +584,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
                         <span className="typing-cursor" style={{ color: AGENT_COLORS[agent] }}>▌</span>
                       )}
                       {ttsEnabled && !msg.isStreaming && msg.text && (
-                        <button
-                          className="column-speak-btn"
-                          title={`Listen to ${AGENT_DISPLAY[agent]}`}
-                          onClick={() => speakText(msg.text, agent)}
-                        >
-                          🔊
-                        </button>
+                        <SpeechControls text={msg.text} label={`${AGENT_DISPLAY[agent]} response`} compact />
                       )}
                     </div>
                   ) : (
@@ -725,13 +696,7 @@ function ModeratorPanel({
         )}
         {isStreaming && <span className="typing-cursor" style={{ color: 'var(--moderator)' }}>▌</span>}
         {ttsEnabled && !msg.isStreaming && msg.text && (
-          <button
-            className="column-speak-btn column-speak-btn--mod"
-            title="Listen to Moderator synthesis"
-            onClick={() => speakText(msg.text, 'Moderator')}
-          >
-            🔊 Listen
-          </button>
+          <SpeechControls text={msg.text} label="Moderator synthesis" compact />
         )}
       </div>
     </div>
