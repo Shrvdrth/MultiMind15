@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MultiMind Animated Demo Video</title>
+<style>
+  :root {
+    --bg: #070b14;
+    --card: rgba(255,255,255,0.06);
+    --card2: rgba(255,255,255,0.1);
+    --border: rgba(255,255,255,0.12);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #6366f1;
+    --purple: #a855f7;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #38bdf8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(99,102,241,0.22), transparent 28%),
+      radial-gradient(circle at 85% 88%, rgba(168,85,247,0.20), transparent 30%),
+      radial-gradient(circle at 50% 50%, rgba(52,211,153,0.09), transparent 34%),
+      var(--bg);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(circle at center, black, transparent 72%);
+  }
+  .slide {
+    position: fixed;
+    inset: 0;
+    display: none;
+    padding: 72px 92px;
+  }
+  .slide.active { display: grid; }
+  .brand {
+    position: fixed;
+    top: 34px;
+    left: 48px;
+    z-index: 10;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, #818cf8, #c084fc, #34d399);
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .counter {
+    position: fixed;
+    right: 48px;
+    bottom: 34px;
+    color: var(--muted);
+    font-size: 14px;
+    letter-spacing: 0.14em;
+    z-index: 10;
+  }
+  .progress {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--accent), var(--purple), var(--green));
+    z-index: 10;
+  }
+  .eyebrow {
+    display: inline-flex;
+    width: fit-content;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.34);
+    color: #c4b5fd;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 800;
+  }
+  h1, h2 {
+    margin: 0;
+    line-height: 0.95;
+    letter-spacing: -0.07em;
+  }
+  h1 { font-size: 108px; max-width: 1120px; }
+  h2 { font-size: 74px; max-width: 980px; }
+  h3 { margin: 0 0 10px; font-size: 28px; letter-spacing: -0.035em; }
+  p { margin: 0; color: var(--muted); line-height: 1.65; font-size: 24px; }
+  .grad {
+    background: linear-gradient(135deg, #818cf8, #c084fc, #34d399);
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(480px, 0.88fr);
+    gap: 70px;
+    align-items: center;
+  }
+  .center {
+    place-items: center;
+    text-align: center;
+  }
+  .stack { display: grid; gap: 28px; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    padding: 28px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+  }
+  .card p { font-size: 19px; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .pill {
+    padding: 10px 15px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--border);
+    color: #dbeafe;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .visual-card {
+    min-height: 540px;
+    border-radius: 36px;
+    border: 1px solid var(--border);
+    background:
+      linear-gradient(145deg, rgba(99,102,241,0.18), rgba(52,211,153,0.08)),
+      rgba(255,255,255,0.04);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 35px 110px rgba(0,0,0,0.36);
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(0.2px);
+    box-shadow: 0 0 80px currentColor;
+  }
+  .orb.one { width: 150px; height: 150px; color: #818cf8; background: #6366f1; left: 72px; top: 80px; opacity: 0.55; }
+  .orb.two { width: 190px; height: 190px; color: #34d399; background: #10b981; right: 80px; bottom: 72px; opacity: 0.38; }
+  .orb.three { width: 110px; height: 110px; color: #c084fc; background: #a855f7; right: 120px; top: 92px; opacity: 0.48; }
+  .agent-node {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 116px;
+    height: 116px;
+    border-radius: 28px;
+    background: rgba(8,12,20,0.78);
+    border: 1px solid var(--border);
+    font-size: 42px;
+  }
+  .agent-node span {
+    position: absolute;
+    bottom: -34px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #cbd5e1;
+  }
+  .n1 { left: 72px; top: 82px; }
+  .n2 { right: 84px; top: 86px; }
+  .n3 { left: 110px; bottom: 112px; }
+  .n4 { right: 120px; bottom: 114px; }
+  .center-node {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 150px;
+    height: 150px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--purple), var(--green));
+    box-shadow: 0 0 80px rgba(99,102,241,0.55);
+    font-size: 58px;
+  }
+  .line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.34), transparent);
+    transform-origin: center;
+  }
+  .l1 { width: 330px; left: 170px; top: 164px; transform: rotate(16deg); }
+  .l2 { width: 350px; left: 188px; top: 358px; transform: rotate(-15deg); }
+  .l3 { width: 300px; left: 220px; top: 264px; transform: rotate(90deg); }
+  .workflow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+    width: 100%;
+  }
+  .step {
+    min-height: 320px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 26px;
+    position: relative;
+    overflow: hidden;
+  }
+  .step strong { display: block; color: var(--green); font-size: 18px; margin-bottom: 22px; }
+  .step p { font-size: 18px; }
+  .mock {
+    border-radius: 30px;
+    background: rgba(8,12,20,0.86);
+    border: 1px solid var(--border);
+    padding: 24px;
+    display: grid;
+    gap: 16px;
+  }
+  .mock-head { display: flex; gap: 10px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; background: var(--red); }
+  .dot:nth-child(2){ background: var(--yellow); }
+  .dot:nth-child(3){ background: var(--green); }
+  .mock-panel {
+    min-height: 92px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    padding: 18px;
+    color: #cbd5e1;
+    font-size: 19px;
+  }
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .metric strong { display: block; font-size: 42px; color: #fff; }
+  .metric span { color: var(--muted); font-size: 16px; }
+  .quote {
+    font-size: 42px;
+    line-height: 1.22;
+    letter-spacing: -0.04em;
+    color: #fff;
+    max-width: 1080px;
+  }
+</style>
+</head>
+<body>
+<div class="brand">MultiMind</div>
+<div class="counter" id="counter"></div>
+<div class="progress" id="progress"></div>
+
+<section class="slide center" data-title="Intro">
+  <div class="stack center">
+    <span class="eyebrow">Premium AI Decision Intelligence</span>
+    <h1>Meet <span class="grad">MultiMind</span></h1>
+    <p style="max-width:900px">A multi-agent AI debate platform for business, technology, product, and operations decisions.</p>
+    <div class="pill-row" style="justify-content:center">
+      <span class="pill">React + Vite</span><span class="pill">.NET 10</span><span class="pill">PostgreSQL</span><span class="pill">Docker + Kubernetes</span>
+    </div>
+  </div>
+</section>
+
+<section class="slide two-col" data-title="Problem">
+  <div class="stack">
+    <span class="eyebrow">The problem</span>
+    <h2>One AI answer is not enough for high-stakes decisions.</h2>
+    <p>Teams need competing perspectives, structured reasoning, risk analysis, and confidence-scored recommendations before they commit time and budget.</p>
+  </div>
+  <div class="cards">
+    <div class="card"><h3>⚠️ Blind spots</h3><p>Single-perspective answers miss trade-offs and dissenting viewpoints.</p></div>
+    <div class="card"><h3>⏱ Slow alignment</h3><p>Stakeholders spend hours debating the same assumptions manually.</p></div>
+    <div class="card"><h3>📉 Unclear ROI</h3><p>Recommendations need business impact, risks, and future signals.</p></div>
+    <div class="card"><h3>🔒 Trust gap</h3><p>Teams need transparent reasoning, not black-box advice.</p></div>
+  </div>
+</section>
+
+<section class="slide two-col" data-title="Solution">
+  <div class="stack">
+    <span class="eyebrow">The solution</span>
+    <h2>Three AI agents debate. A moderator synthesizes.</h2>
+    <p>Strategist, Risk Analyst, and Engineer independently evaluate a question, challenge each other, then a Moderator creates a recommendation with confidence.</p>
+  </div>
+  <div class="visual-card">
+    <div class="line l1"></div><div class="line l2"></div><div class="line l3"></div>
+    <div class="orb one"></div><div class="orb two"></div><div class="orb three"></div>
+    <div class="agent-node n1">🎯<span>Strategy</span></div>
+    <div class="agent-node n2">⚠️<span>Risk</span></div>
+    <div class="agent-node n3">⚙️<span>Engineer</span></div>
+    <div class="agent-node n4">🧠<span>Moderator</span></div>
+    <div class="center-node">✦</div>
+  </div>
+</section>
+
+<section class="slide center" data-title="Workflow">
+  <div class="stack center" style="width:100%">
+    <span class="eyebrow">Workflow</span>
+    <h2>From question to decision in one guided flow.</h2>
+    <div class="workflow">
+      <div class="step"><strong>01</strong><h3>Submit a decision</h3><p>Ask a business, technical, marketing, finance, or operational question.</p></div>
+      <div class="step"><strong>02</strong><h3>Watch live debate</h3><p>Agents stream arguments, challenges, and analysis in real time.</p></div>
+      <div class="step"><strong>03</strong><h3>Review outlook</h3><p>Topic-aware future insights highlight risks, opportunities, and trends.</p></div>
+      <div class="step"><strong>04</strong><h3>Act with clarity</h3><p>Export results, discuss comments, and align around the recommendation.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide two-col" data-title="Live Experience">
+  <div class="stack">
+    <span class="eyebrow">Live debate experience</span>
+    <h2>Engaging visuals keep users oriented while analysis runs.</h2>
+    <p>The debate page adapts its visuals to AI, technology, marketing, e-commerce, finance, operations, or general strategy questions.</p>
+  </div>
+  <div class="mock">
+    <div class="mock-head"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="mock-panel">🎯 Strategist: Market timing and strategic upside...</div>
+    <div class="mock-panel">⚠️ Risk Analyst: Adoption and execution risks...</div>
+    <div class="mock-panel">⚙️ Engineer: Feasibility, architecture, and complexity...</div>
+    <div class="mock-panel">🧠 Moderator: Synthesizing consensus...</div>
+  </div>
+</section>
+
+<section class="slide two-col" data-title="Future Outlook">
+  <div class="stack">
+    <span class="eyebrow">Business and technical intelligence</span>
+    <h2>Outlooks now match the user's question.</h2>
+    <p>AI questions receive a Future AI Outlook. Technical questions receive a Technology Future Outlook. Marketing, e-commerce, finance, and operations each get relevant guidance.</p>
+  </div>
+  <div class="cards">
+    <div class="card"><h3>🤖 Future AI Outlook</h3><p>Adoption, automation impact, governance, and market opportunity.</p></div>
+    <div class="card"><h3>💻 Technology Future Outlook</h3><p>Architecture direction, integration risk, scalability, and innovation paths.</p></div>
+    <div class="card"><h3>📣 Marketing Growth Outlook</h3><p>Audience behavior, campaign direction, positioning, and engagement.</p></div>
+    <div class="card"><h3>🛒 E-commerce Future Outlook</h3><p>Customer behavior, conversion, retention, and omnichannel expansion.</p></div>
+  </div>
+</section>
+
+<section class="slide two-col" data-title="Voice and Accessibility">
+  <div class="stack">
+    <span class="eyebrow">Optional accessibility</span>
+    <h2>Text-to-speech is powerful, but never required.</h2>
+    <p>Users can play, pause, resume, stop, select voices, and adjust speed. The workflow remains fully usable when voice is disabled or unsupported.</p>
+  </div>
+  <div class="mock">
+    <div class="mock-panel">▶ Play AI response</div>
+    <div class="mock-panel">⏸ Pause · ⏵ Resume · ■ Stop</div>
+    <div class="mock-panel">Speed: 0.70x — 1.35x</div>
+    <div class="mock-panel">Voice selection saved locally</div>
+  </div>
+</section>
+
+<section class="slide two-col" data-title="Platform">
+  <div class="stack">
+    <span class="eyebrow">Production-ready platform</span>
+    <h2>Built for secure, modern deployment.</h2>
+    <p>JWT auth, refresh tokens, admin dashboards, PostgreSQL, Docker, Kubernetes, nginx proxying, SSE reliability, and CI-tested backend services.</p>
+  </div>
+  <div class="metric-grid">
+    <div class="card metric"><strong>79</strong><span>backend tests passing</span></div>
+    <div class="card metric"><strong>0</strong><span>backend build warnings</span></div>
+    <div class="card metric"><strong>100%</strong><span>responsive UI pass</span></div>
+  </div>
+</section>
+
+<section class="slide center" data-title="Close">
+  <div class="stack center">
+    <span class="eyebrow">MultiMind</span>
+    <div class="quote">A premium AI decision platform that turns uncertainty into structured debate, future insight, and confident action.</div>
+    <div class="pill-row" style="justify-content:center">
+      <span class="pill">Live AI Debate</span>
+      <span class="pill">Topic-Aware Outlooks</span>
+      <span class="pill">Optional Voice</span>
+      <span class="pill">Kubernetes Ready</span>
+    </div>
+  </div>
+</section>
+
+<script>
+const slides = [...document.querySelectorAll('.slide')];
+const params = new URLSearchParams(location.search);
+const slideIndex = Math.max(0, Math.min(Number(params.get('slide') || 0), slides.length - 1));
+slides.forEach((slide, index) => slide.classList.toggle('active', index === slideIndex));
+document.getElementById('counter').textContent = `${slideIndex + 1} / ${slides.length}`;
+document.getElementById('progress').style.width = `${((slideIndex + 1) / slides.length) * 100}%`;
+window.__SLIDE_COUNT__ = slides.length;
+</script>
+</body>
+</html>
