@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import { API_BASE_URL } from "../api/config";
+import { useAuth } from "../context/AuthContext";
 
 interface Message {
   role: "user" | "assistant";
@@ -13,9 +16,8 @@ const SUGGESTED = [
   "What is the confidence score?",
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5125/api";
-
 export default function ChatbotWidget() {
+  const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -29,6 +31,7 @@ export default function ChatbotWidget() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const streamedResponseRef = useRef("");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,7 +57,7 @@ export default function ChatbotWidget() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${API_BASE}/chatbot/message`, {
+      const res = await fetch(`${API_BASE_URL}/chatbot/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -69,7 +72,7 @@ export default function ChatbotWidget() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let full = "";
+      streamedResponseRef.current = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -83,13 +86,13 @@ export default function ChatbotWidget() {
           const payload = line.slice(6).trim();
           if (payload === "[DONE]") break;
           try {
-            const parsed = JSON.parse(payload);
-            full += parsed.chunk ?? "";
+            const parsed = JSON.parse(payload) as { chunk?: string };
+            streamedResponseRef.current = `${streamedResponseRef.current}${parsed.chunk ?? ""}`;
             setMessages((prev) => {
               const updated = [...prev];
               updated[updated.length - 1] = {
                 role: "assistant",
-                content: full,
+                content: streamedResponseRef.current,
                 streaming: true,
               };
               return updated;
@@ -102,7 +105,7 @@ export default function ChatbotWidget() {
 
       setMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: full };
+        updated[updated.length - 1] = { role: "assistant", content: streamedResponseRef.current };
         return updated;
       });
     } catch (err: unknown) {
@@ -127,13 +130,7 @@ export default function ChatbotWidget() {
     }
   };
 
-  const renderMarkdown = (text: string) => {
-    return text
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/`(.+?)`/g, '<code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:.85em">$1</code>')
-      .replace(/^- (.+)/gm, '<span style="display:block;padding-left:12px">• $1</span>')
-      .replace(/\n/g, "<br/>");
-  };
+  if (!isAuthenticated) return null;
 
   return (
     <>
@@ -332,8 +329,28 @@ export default function ChatbotWidget() {
                   border: m.role === "assistant" ? "1px solid #252a3d" : "none",
                   position: "relative",
                 }}
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }}
-              />
+              >
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p style={{ margin: 0 }}>{children}</p>,
+                    code: ({ children }) => (
+                      <code style={{
+                        background: "rgba(255,255,255,.1)",
+                        padding: "1px 5px",
+                        borderRadius: 4,
+                        fontFamily: "monospace",
+                        fontSize: ".85em",
+                      }}>
+                        {children}
+                      </code>
+                    ),
+                    ul: ({ children }) => <ul style={{ margin: 0, paddingLeft: 18 }}>{children}</ul>,
+                    ol: ({ children }) => <ol style={{ margin: 0, paddingLeft: 18 }}>{children}</ol>,
+                  }}
+                >
+                  {m.content}
+                </ReactMarkdown>
+              </div>
               {m.streaming && (
                 <span
                   style={{

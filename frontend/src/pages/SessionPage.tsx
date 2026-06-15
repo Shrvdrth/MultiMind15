@@ -5,6 +5,9 @@ import type { DebateSessionDto } from '../api/debate';
 import AnalyticsPanel from '../components/AnalyticsPanel';
 import { ChatDebateView } from '../components/ChatDebateView';
 import { CommentSection } from '../components/CommentSection';
+import FutureBusinessOutlook from '../components/FutureBusinessOutlook';
+import { useAuth } from '../context/AuthContext';
+import { classifyTopic } from '../utils/topicInsights';
 
 const POLL_INTERVAL_MS = 4000;
 
@@ -14,8 +17,8 @@ export default function SessionPage() {
   const [error, setError] = useState('');
   const [isFavourite, setIsFavourite] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [liveMode, setLiveMode] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { userId } = useAuth();
 
   useEffect(() => {
     if (!sessionId) return;
@@ -36,10 +39,6 @@ export default function SessionPage() {
     pollRef.current = setInterval(fetchSession, POLL_INTERVAL_MS);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [sessionId]);
-
-  useEffect(() => {
-    if (session?.status === 'running') setLiveMode(true);
-  }, [session?.status]);
 
   if (error) return (
     <div className="page-error">
@@ -63,11 +62,13 @@ export default function SessionPage() {
     </div>
   );
 
-  const isLive = liveMode || session.status === 'running';
+  const isLive = session.status === 'running';
 
   const totalWords = session.rounds
     .flatMap(r => r.responses)
     .reduce((sum, r) => sum + r.responseText.split(/\s+/).length, 0);
+  const confidenceLabel = session.synthesis ? `${session.synthesis.confidenceScore}/100` : 'Pending';
+  const topicProfile = classifyTopic(`${session.originalPrompt}\n${session.synthesis?.fullSynthesis ?? ''}`);
 
   const exportDebate = () => {
     const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
@@ -84,7 +85,9 @@ export default function SessionPage() {
     try {
       const res = await toggleFavourite(sessionId);
       setIsFavourite(res.data.isFavourite);
-    } catch {}
+    } catch {
+      // Leave the current favourite state unchanged if the request fails.
+    }
   };
 
   const copyLink = async () => {
@@ -99,7 +102,7 @@ export default function SessionPage() {
       <header className="session-header">
         <Link to="/dashboard" className="btn-ghost">← Back</Link>
         <h1>{isLive ? 'Live Debate' : 'Debate Results'}</h1>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className="session-actions">
           {!isLive && (
             <>
               <button
@@ -117,6 +120,39 @@ export default function SessionPage() {
           <span className={`status status-${session.status}`}>{session.status}</span>
         </div>
       </header>
+
+      <section className="debate-hero-card" aria-labelledby="debate-hero-title">
+        <div className="debate-hero-card__copy">
+          <span className={`debate-hero-card__eyebrow status status-${session.status}`}>
+            {isLive ? 'Live analysis' : session.status}
+          </span>
+          <h2 id="debate-hero-title">
+            {isLive ? 'Your AI panel is debating the decision' : 'Decision intelligence summary'}
+          </h2>
+          <p>
+            MultiMind brings strategy, risk, engineering, and moderator perspectives into one
+            structured workspace so you can compare trade-offs with confidence.
+          </p>
+          <div className="debate-hero-card__metrics" aria-label="Debate summary metrics">
+            <div>
+              <strong>{session.rounds.length}</strong>
+              <span>Rounds captured</span>
+            </div>
+            <div>
+              <strong>{totalWords.toLocaleString()}</strong>
+              <span>Words analyzed</span>
+            </div>
+            <div>
+              <strong>{confidenceLabel}</strong>
+              <span>Confidence</span>
+            </div>
+          </div>
+        </div>
+        <div className="debate-hero-card__visual" aria-hidden="true" style={{ ['--topic-accent' as string]: topicProfile.accent }}>
+          <img src={topicProfile.visual} alt="" />
+          <span>{topicProfile.label}</span>
+        </div>
+      </section>
 
       {/* ── Prompt ─────────────────────────────────────────── */}
       <div className="prompt-card">
@@ -151,14 +187,33 @@ export default function SessionPage() {
 
       {/* ── Live stream OR completed rounds ────────────────── */}
       {isLive && sessionId ? (
-        <ChatDebateView
-          sessionId={sessionId}
-          userPrompt={session.originalPrompt}
-          onComplete={() => {
-            setLiveMode(false);
-            getSession(sessionId).then(r => setSession(r.data));
-          }}
-        />
+        <>
+          <section className="live-focus-panel" style={{ ['--topic-accent' as string]: topicProfile.accent }}>
+            <div className="live-focus-panel__visual" aria-hidden="true">
+              <img src={topicProfile.visual} alt="" />
+            </div>
+            <div className="live-focus-panel__content">
+              <span>{topicProfile.label}</span>
+              <h2>Debate in progress</h2>
+              <p>
+                The agents are comparing strategic upside, risks, feasibility, and future signals for this topic.
+                Keep this page open while the live stream builds the recommendation.
+              </p>
+              <div className="live-focus-panel__steps" aria-label="Live debate stages">
+                <div><strong>01</strong><small>Perspective mapping</small></div>
+                <div><strong>02</strong><small>Cross-agent challenge</small></div>
+                <div><strong>03</strong><small>Moderator synthesis</small></div>
+              </div>
+            </div>
+          </section>
+          <ChatDebateView
+            sessionId={sessionId}
+            userPrompt={session.originalPrompt}
+            onComplete={() => {
+              getSession(sessionId).then(r => setSession(r.data));
+            }}
+          />
+        </>
       ) : (
         <>
           <ChatDebateView
@@ -168,14 +223,20 @@ export default function SessionPage() {
           />
 
           {session.rounds.length > 0 && (
-            <AnalyticsPanel
-              rounds={session.rounds}
-              synthesisText={session.synthesis?.fullSynthesis}
-            />
+            <>
+              <FutureBusinessOutlook
+                prompt={session.originalPrompt}
+                synthesisText={session.synthesis?.fullSynthesis}
+              />
+              <AnalyticsPanel
+                rounds={session.rounds}
+                synthesisText={session.synthesis?.fullSynthesis}
+              />
+            </>
           )}
 
           {session.status === 'completed' && sessionId && (
-            <CommentSection sessionId={sessionId} userId={session.sessionId ?? null} />
+            <CommentSection sessionId={sessionId} userId={userId} />
           )}
 
           <div className="export-row">

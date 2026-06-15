@@ -75,8 +75,23 @@ export default function DashboardPage() {
         // Navigate immediately — session page polls for results
         navigate(`/session/${res.data.sessionId}`);
       } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-        setError(msg || 'Failed to start debate. Please try again.');
+        const apiError = err as {
+          response?: { status?: number; data?: { message?: string; detail?: string; title?: string } };
+          request?: unknown;
+        };
+        const data = apiError.response?.data;
+        const status = apiError.response?.status;
+        const msg = data?.message || data?.detail || data?.title;
+
+        if (msg) {
+          setError(msg);
+        } else if (status === 401) {
+          setError('Your session expired. Please sign out and sign in again.');
+        } else if (apiError.request) {
+          setError('Could not reach the backend API. Please check that the backend pod is running.');
+        } else {
+          setError('Failed to start debate. Please try again.');
+        }
       } finally {
         setLoading(false);
         submittingRef.current = false;
@@ -158,7 +173,7 @@ export default function DashboardPage() {
               maxLength={MAX_LENGTH}
               disabled={loading}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="form-meta-row">
               <div className="form-hint">
                 <span>💡</span>
                 <span>Try: <em
@@ -212,7 +227,9 @@ function HistorySection() {
       setHistory(h => h.map(item =>
         item.id === id ? { ...item, isFavourite: res.data.isFavourite } : item
       ));
-    } catch {}
+    } catch {
+      // Favourite state is optimistic-only; keep the current list unchanged on failure.
+    }
   };
 
   return (
@@ -258,7 +275,7 @@ function HistorySection() {
                 <span className="history-prompt">
                   {item.originalPrompt.slice(0, 90)}{item.originalPrompt.length > 90 ? '…' : ''}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                <div className="history-item-meta">
                   {item.createdAt && (
                     <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>
                       {new Date(item.createdAt).toLocaleDateString()}

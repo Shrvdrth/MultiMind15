@@ -1,0 +1,14 @@
+<svg width="720" height="420" viewBox="0 0 720 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="420" rx="32" fill="#0B1020"/>
+  <circle cx="560" cy="110" r="150" fill="#38BDF8" opacity="0.16"/>
+  <circle cx="170" cy="300" r="160" fill="#A855F7" opacity="0.14"/>
+  <rect x="150" y="94" width="420" height="250" rx="28" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <path d="M230 160H500L472 260H258L230 160Z" fill="#082F49" stroke="#38BDF8" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M220 136H178" stroke="#38BDF8" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="282" cy="292" r="20" fill="#38BDF8"/>
+  <circle cx="448" cy="292" r="20" fill="#38BDF8"/>
+  <path d="M288 198H446M302 232H426" stroke="#F8FAFC" stroke-width="7" stroke-linecap="round"/>
+  <rect x="210" y="66" width="94" height="52" rx="16" fill="#312E81" stroke="#818CF8"/>
+  <rect x="416" y="66" width="94" height="52" rx="16" fill="#064E3B" stroke="#34D399"/>
+  <text x="106" y="376" fill="#CBD5E1" font-family="Inter, Arial" font-size="22" font-weight="800">E-commerce demand signals</text>
+</svg>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { login as loginApi } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = (location.state as { message?: string } | null)?.message;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -18,7 +20,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await loginApi(email, password);
-      login(res.data.token, res.data.email, res.data.role ?? 'User', res.data.refreshToken ?? '');
+      login(res.data.token, res.data.userId, res.data.email, res.data.role ?? 'User', res.data.refreshToken ?? '');
       navigate('/dashboard');
     } catch {
       setError('Invalid email or password.');
@@ -88,6 +90,7 @@ export default function LoginPage() {
                 required
               />
             </div>
+            {successMessage && <div className="success-banner">{successMessage}</div>}
             {error && <p className="error">⚠ {error}</p>}
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In →'}

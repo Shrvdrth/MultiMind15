@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using MultiMind.API.Data;
@@ -110,7 +112,8 @@ public class DebateEngine : IDebateEngine
     {
         // Epic 11.3 — Check in-memory cache first (avoids DB roundtrip for rapid resubmissions)
         var normalizedPrompt = prompt.Trim();
-        var cacheKey = $"{DedupPrefix}{userId}:{normalizedPrompt.GetHashCode(StringComparison.Ordinal)}";
+        var promptHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalizedPrompt)));
+        var cacheKey = $"{DedupPrefix}{userId}:{promptHash}";
 
         if (_cache.TryGetValue(cacheKey, out DebateSession? cached) && cached is not null)
         {
@@ -122,7 +125,7 @@ public class DebateEngine : IDebateEngine
         var recentDuplicate = await _db.DebateSessions
             .Where(s => s.UserId == userId &&
                         s.OriginalPrompt == normalizedPrompt &&
-                        (s.Status == "running" || s.Status == "completed") &&
+                        s.Status == "running" &&
                         s.CreatedAt > DateTime.UtcNow.AddMinutes(-5))
             .OrderByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();

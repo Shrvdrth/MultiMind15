@@ -1,0 +1,16 @@
+<svg width="720" height="420" viewBox="0 0 720 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="420" rx="32" fill="#0B1020"/>
+  <circle cx="360" cy="210" r="178" fill="#A855F7" opacity="0.18"/>
+  <circle cx="154" cy="92" r="118" fill="#6366F1" opacity="0.16"/>
+  <g stroke="#64748B" stroke-width="2">
+    <path d="M360 210L196 126M360 210L524 126M360 210L214 292M360 210L506 292"/>
+    <path d="M196 126L524 126M214 292L506 292"/>
+  </g>
+  <circle cx="360" cy="210" r="82" fill="#111827" stroke="#C084FC" stroke-width="3"/>
+  <path d="M328 202C339 174 381 174 392 202C404 231 376 253 360 264C344 253 316 231 328 202Z" fill="#F8FAFC"/>
+  <circle cx="196" cy="126" r="34" fill="#312E81" stroke="#818CF8" stroke-width="3"/>
+  <circle cx="524" cy="126" r="34" fill="#3B0764" stroke="#C084FC" stroke-width="3"/>
+  <circle cx="214" cy="292" r="34" fill="#064E3B" stroke="#34D399" stroke-width="3"/>
+  <circle cx="506" cy="292" r="34" fill="#7F1D1D" stroke="#F87171" stroke-width="3"/>
+  <text x="96" y="374" fill="#CBD5E1" font-family="Inter, Arial" font-size="22" font-weight="800">AI transformation map</text>
+</svg>

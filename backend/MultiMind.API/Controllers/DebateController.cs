@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MultiMind.API.Data;
 using MultiMind.API.DTOs;
+using MultiMind.API.Models;
 using MultiMind.API.Services;
 
 namespace MultiMind.API.Controllers;
@@ -92,11 +93,7 @@ public class DebateController : ControllerBase
         // If debate already complete, return a single DebateComplete event and exit
         if (session.Status == "completed" || session.Status == "failed")
         {
-            var payload = JsonSerializer.Serialize(new
-            {
-                eventType = session.Status == "completed" ? "DebateComplete" : "Error",
-                sessionId = session.Id
-            });
+            var payload = await BuildTerminalStreamEventAsync(session, ct);
             await Response.WriteAsync($"data: {payload}\n\n", ct);
             await Response.Body.FlushAsync(ct);
             return;
@@ -137,12 +134,7 @@ public class DebateController : ControllerBase
                     .FirstOrDefaultAsync(s => s.Id == sessionId, ct);
                 if (latest != null && (latest.Status == "completed" || latest.Status == "failed"))
                 {
-                    var finalType = latest.Status == "completed" ? "DebateComplete" : "Error";
-                    var fallback = JsonSerializer.Serialize(new
-                    {
-                        eventType = finalType,
-                        sessionId = latest.Id
-                    });
+                    var fallback = await BuildTerminalStreamEventAsync(latest, ct);
                     await Response.WriteAsync($"data: {fallback}\n\n", ct);
                     await Response.Body.FlushAsync(ct);
                 }
@@ -152,6 +144,33 @@ public class DebateController : ControllerBase
         {
             // Client disconnected — normal
         }
+    }
+
+    private async Task<string> BuildTerminalStreamEventAsync(DebateSession session, CancellationToken ct)
+    {
+        string? text = null;
+
+        if (session.Status == "completed")
+        {
+            var synthesis = session.Synthesis ?? await _db.ModeratorSyntheses.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.SessionId == session.Id, ct);
+
+            if (synthesis != null)
+            {
+                text = JsonSerializer.Serialize(new
+                {
+                    confidenceScore = synthesis.ConfidenceScore,
+                    recommendation = synthesis.Recommendation
+                });
+            }
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            eventType = session.Status == "completed" ? "DebateComplete" : "Error",
+            sessionId = session.Id,
+            text
+        });
     }
 
     // Epic 11.6 — Basic prompt injection safeguard
@@ -312,5 +331,24 @@ public class DebateController : ControllerBase
             return BadRequest(new { message = "Debate is not currently waiting for user input." });
 
         return Ok(new { message = "Input submitted." });
+    }
+
+    [HttpPost("{sessionId}/user-input/skip")]
+    public async Task<IActionResult> SkipUserInput(Guid sessionId)
+    {
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        var session = await _db.DebateSessions
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
+
+        if (session == null) return NotFound();
+
+        if (session.Status != "running")
+            return BadRequest(new { message = "Debate is not currently running." });
+
+        _userInputWaiter.Cancel(sessionId);
+
+        return Ok(new { message = "Input skipped." });
     }
 }

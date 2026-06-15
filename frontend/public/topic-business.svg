@@ -1,0 +1,13 @@
+<svg width="720" height="420" viewBox="0 0 720 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="420" rx="32" fill="#0B1020"/>
+  <circle cx="150" cy="88" r="150" fill="#6366F1" opacity="0.18"/>
+  <circle cx="590" cy="330" r="180" fill="#22C55E" opacity="0.16"/>
+  <path d="M94 322H626" stroke="#334155" stroke-width="2"/>
+  <rect x="126" y="210" width="72" height="112" rx="12" fill="#1E293B" stroke="#64748B"/>
+  <rect x="236" y="158" width="72" height="164" rx="12" fill="#312E81" stroke="#818CF8"/>
+  <rect x="346" y="110" width="72" height="212" rx="12" fill="#064E3B" stroke="#34D399"/>
+  <rect x="456" y="72" width="72" height="250" rx="12" fill="#3B0764" stroke="#C084FC"/>
+  <path d="M132 170C218 134 271 150 344 112C409 78 470 70 584 54" stroke="#F8FAFC" stroke-width="6" stroke-linecap="round"/>
+  <path d="M554 43L586 54L564 80" stroke="#F8FAFC" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="126" y="374" fill="#CBD5E1" font-family="Inter, Arial" font-size="22" font-weight="800">Business outlook</text>
+</svg>

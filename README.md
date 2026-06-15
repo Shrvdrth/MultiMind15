@@ -112,7 +112,7 @@ MULTIMIND/
 │       └── ModeratorServiceTests.cs
 │
 ├── k8s/
-│   ├── secrets.yaml                   # Base64-encoded DB password, JWT key, API key
+│   ├── secrets.yaml.example           # Template for DB password, JWT key, API key
 │   ├── postgres-deployment.yaml       # PostgreSQL Deployment + PVC + ClusterIP Service
 │   ├── backend-deployment.yaml        # Backend Deployment + NodePort Service (30081)
 │   └── frontend-deployment.yaml       # Frontend Deployment + NodePort Service (30080)
@@ -575,13 +575,10 @@ docker build --build-arg VITE_API_BASE_URL="/api" -t multimind-frontend:latest .
 ### 3 — Populate secrets
 
 ```powershell
-# Windows PowerShell — generate base64 values
-[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("your-db-password"))
-[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("your-jwt-key-32-chars"))
-[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("sk-or-v1-..."))
+Copy-Item k8s/secrets.yaml.example k8s/secrets.yaml
 ```
 
-Paste the values into `k8s/secrets.yaml`.
+Edit `k8s/secrets.yaml` and replace the placeholder values. The template uses Kubernetes `stringData`, so you can paste normal text values; Kubernetes will encode them when the Secret is created. Keep the real `k8s/secrets.yaml` file private.
 
 ### 4 — Apply manifests
 

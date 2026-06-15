@@ -51,8 +51,6 @@ spec:
               value: anthropic/claude-sonnet-4.5
             - name: OpenAI__BaseUrl
               value: https://openrouter.ai/api/v1
-            - name: Frontend__Url
-              value: "http://192.168.49.2:30080"
           readinessProbe:
             httpGet:
               path: /health

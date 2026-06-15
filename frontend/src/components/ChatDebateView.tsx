@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { submitUserInput } from '../api/debate';
+import { skipUserInput, submitUserInput } from '../api/debate';
 import type { DebateSessionDto } from '../api/debate';
+import { API_BASE_URL } from '../api/config';
+import SpeechControls from './SpeechControls';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,24 +64,6 @@ const AGENT_TITLES: Record<string, string> = {
   RiskAnalyst: 'Risk Officer',
   Engineer:    'Principal Engineer',
 };
-
-// ── Text-to-Speech helper ───────────────────────────────────────────────────
-
-function speakText(text: string, agentType: string) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang   = 'en-US';
-  utterance.volume = 1;
-  switch (agentType) {
-    case 'Strategist':  utterance.pitch = 1.00; utterance.rate = 0.93; break;
-    case 'RiskAnalyst': utterance.pitch = 0.85; utterance.rate = 0.90; break;
-    case 'Engineer':    utterance.pitch = 1.15; utterance.rate = 1.00; break;
-    case 'Moderator':   utterance.pitch = 1.05; utterance.rate = 0.87; break;
-    default:            utterance.pitch = 1.00; utterance.rate = 0.95; break;
-  }
-  window.speechSynthesis.speak(utterance);
-}
 
 // ── Derive 3-column layout from flat messages at render time ──────────────────
 
@@ -194,9 +178,13 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   const [displayedTexts, setDisplayedTexts] = useState<Record<string, string>>({});
   const [verdictData, setVerdictData] = useState<{ confidenceScore: number; recommendation: string } | null>(null);
 
-  // ── TTS ──────────────────────────────────────────────────────────────────────
-  const [ttsEnabled, setTtsEnabled] = useState(true);
-  const ttsEnabledRef = useRef(true);
+  // ── Optional voice / TTS ─────────────────────────────────────────────────────
+  const supportsSpeech = typeof window !== 'undefined'
+    && 'speechSynthesis' in window
+    && 'SpeechSynthesisUtterance' in window;
+  const [ttsEnabled, setTtsEnabled] = useState(() =>
+    supportsSpeech && localStorage.getItem('multimind.voiceEnabled') === 'true'
+  );
 
   // ── Static / completed mode — no streaming ──
   useEffect(() => {
@@ -209,8 +197,40 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
   useEffect(() => {
     if (completedSession || !token) return;
 
-    const url = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5125/api'}/debate/${sessionId}/stream`;
+    const url = `${API_BASE_URL}/debate/${sessionId}/stream`;
     const controller = new AbortController();
+    let terminalEventReceived = false;
+
+    const recoverFromStreamEnd = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/debate/${sessionId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          setStatus('error');
+          return;
+        }
+
+        const latest = await res.json() as DebateSessionDto;
+        if (latest.status === 'completed') {
+          if (latest.synthesis) {
+            setVerdictData({
+              confidenceScore: latest.synthesis.confidenceScore,
+              recommendation: latest.synthesis.recommendation,
+            });
+          }
+          setStatus('done');
+          setTimeout(() => onComplete?.(), 300);
+        } else if (latest.status === 'failed') {
+          setStatus('error');
+        } else {
+          setStatus('error');
+        }
+      } catch (err: unknown) {
+        if ((err as { name?: string }).name !== 'AbortError') setStatus('error');
+      }
+    };
 
     const streamSSE = async () => {
       try {
@@ -239,6 +259,9 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
               handleEvent(evt);
             } catch { /* skip malformed */ }
           }
+        }
+        if (!controller.signal.aborted && !terminalEventReceived) {
+          await recoverFromStreamEnd();
         }
       } catch (err: unknown) {
         if ((err as { name?: string }).name !== 'AbortError') setStatus('error');
@@ -300,8 +323,6 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
             const updated = [...prev];
             for (let i = updated.length - 1; i >= 0; i--) {
               if (updated[i].agentType === evt.agentType && updated[i].isStreaming) {
-                if (ttsEnabledRef.current && updated[i].text)
-                  speakText(updated[i].text, evt.agentType ?? '');
                 updated[i] = { ...updated[i], isStreaming: false };
                 break;
               }
@@ -370,8 +391,6 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
             const updated = [...prev];
             for (let i = updated.length - 1; i >= 0; i--) {
               if (updated[i].agentType === 'Moderator' && updated[i].isStreaming) {
-                if (ttsEnabledRef.current && updated[i].text)
-                  speakText(updated[i].text, 'Moderator');
                 updated[i] = { ...updated[i], isStreaming: false };
                 break;
               }
@@ -381,6 +400,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           break;
 
         case 'DebateComplete':
+          terminalEventReceived = true;
           window.speechSynthesis?.cancel();
           try {
             const payload = JSON.parse(evt.text ?? '{}') as { confidenceScore?: number; recommendation?: string };
@@ -391,6 +411,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           break;
 
         case 'Error':
+          terminalEventReceived = true;
           setStatus('error');
           break;
       }
@@ -443,9 +464,15 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
     }
   };
 
-  const skipInput = () => {
+  const skipInput = async () => {
     setInputSubmitted(true);
-    setStatus('live');
+    try {
+      await skipUserInput(sessionId);
+    } catch {
+      // If the backend already moved on, keep the UI in live mode.
+    } finally {
+      setStatus('live');
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -478,16 +505,21 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           <div className="debate-status-bar__actions">
             <button
               className={`tts-toggle${ttsEnabled ? ' tts-toggle--on' : ''}`}
-              title={ttsEnabled ? 'Mute agent voices' : 'Enable agent voices'}
+              aria-pressed={ttsEnabled}
+              disabled={!supportsSpeech}
+              title={supportsSpeech
+                ? (ttsEnabled ? 'Turn off optional agent voices' : 'Enable optional agent voices')
+                : 'Voice playback is not supported in this browser'}
               onClick={() => {
+                if (!supportsSpeech) return;
                 const next = !ttsEnabled;
                 setTtsEnabled(next);
-                ttsEnabledRef.current = next;
+                localStorage.setItem('multimind.voiceEnabled', String(next));
                 if (!next) window.speechSynthesis?.cancel();
               }}
             >
-              {ttsEnabled ? '🔊' : '🔇'}
-              <span>{ttsEnabled ? 'Voice On' : 'Voice Off'}</span>
+              {supportsSpeech ? (ttsEnabled ? '🔊' : '🔇') : '🚫'}
+              <span>{supportsSpeech ? (ttsEnabled ? 'Voice On' : 'Enable Voice') : 'Voice Unavailable'}</span>
             </button>
             {status === 'done' && <span className="arena-done-badge">✓ Complete</span>}
           </div>
@@ -551,14 +583,8 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
                       {isCursorVisible && (
                         <span className="typing-cursor" style={{ color: AGENT_COLORS[agent] }}>▌</span>
                       )}
-                      {!msg.isStreaming && msg.text && (
-                        <button
-                          className="column-speak-btn"
-                          title={`Listen to ${AGENT_DISPLAY[agent]}`}
-                          onClick={() => speakText(msg.text, agent)}
-                        >
-                          🔊
-                        </button>
+                      {ttsEnabled && !msg.isStreaming && msg.text && (
+                        <SpeechControls text={msg.text} label={`${AGENT_DISPLAY[agent]} response`} compact />
                       )}
                     </div>
                   ) : (
@@ -589,6 +615,7 @@ export function ChatDebateView({ sessionId, userPrompt, completedSession, onComp
           msg={moderator}
           displayedTexts={displayedTexts}
           isStreaming={streamingAgent === 'Moderator'}
+          ttsEnabled={ttsEnabled}
         />
       )}
 
@@ -638,10 +665,12 @@ function ModeratorPanel({
   msg,
   displayedTexts,
   isStreaming,
+  ttsEnabled,
 }: {
   msg: ChatMessage;
   displayedTexts: Record<string, string>;
   isStreaming: boolean;
+  ttsEnabled: boolean;
 }) {
   const typed = displayedTexts[msg.id];
   const displayText = typed !== undefined ? typed : msg.text;
@@ -666,14 +695,8 @@ function ModeratorPanel({
           : null
         )}
         {isStreaming && <span className="typing-cursor" style={{ color: 'var(--moderator)' }}>▌</span>}
-        {!msg.isStreaming && msg.text && (
-          <button
-            className="column-speak-btn column-speak-btn--mod"
-            title="Listen to Moderator synthesis"
-            onClick={() => speakText(msg.text, 'Moderator')}
-          >
-            🔊 Listen
-          </button>
+        {ttsEnabled && !msg.isStreaming && msg.text && (
+          <SpeechControls text={msg.text} label="Moderator synthesis" compact />
         )}
       </div>
     </div>

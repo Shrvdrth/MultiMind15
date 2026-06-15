@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../api/config';
 
 interface AgentMessage {
   agentType: string;
@@ -48,7 +49,7 @@ export function LiveDebateView({ sessionId, onComplete }: Props) {
   useEffect(() => {
     if (!token) return;
 
-    const url = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5125/api'}/debate/${sessionId}/stream`;
+    const url = `${API_BASE_URL}/debate/${sessionId}/stream`;
 
     // Use fetch-based SSE because EventSource doesn't support Authorization headers
     const controller = new AbortController();

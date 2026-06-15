@@ -66,3 +66,6 @@ export const toggleFavourite = (sessionId: string) =>
 
 export const submitUserInput = (sessionId: string, message: string) =>
   api.post<{ message: string }>(`/debate/${sessionId}/user-input`, { message });
+
+export const skipUserInput = (sessionId: string) =>
+  api.post<{ message: string }>(`/debate/${sessionId}/user-input/skip`);

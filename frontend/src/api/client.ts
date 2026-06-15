@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_BASE_URL } from './config';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5125/api',
+  baseURL: API_BASE_URL,
 });
 
 // Attach JWT token to every request
@@ -12,17 +13,5 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
-
-// Redirect to login on 401
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(err);
-  }
-);
 
 export default api;

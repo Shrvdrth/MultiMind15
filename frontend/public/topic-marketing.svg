@@ -1,0 +1,15 @@
+<svg width="720" height="420" viewBox="0 0 720 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="420" rx="32" fill="#0B1020"/>
+  <circle cx="176" cy="110" r="150" fill="#F59E0B" opacity="0.16"/>
+  <circle cx="574" cy="310" r="170" fill="#F472B6" opacity="0.14"/>
+  <path d="M156 242C238 138 358 116 526 86" stroke="#F8FAFC" stroke-width="8" stroke-linecap="round"/>
+  <path d="M498 70L530 86L506 114" stroke="#F8FAFC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="184" cy="242" r="54" fill="#451A03" stroke="#F59E0B" stroke-width="3"/>
+  <circle cx="340" cy="154" r="54" fill="#831843" stroke="#F472B6" stroke-width="3"/>
+  <circle cx="526" cy="86" r="54" fill="#312E81" stroke="#818CF8" stroke-width="3"/>
+  <path d="M166 242H202M184 224V260" stroke="#FDE68A" stroke-width="7" stroke-linecap="round"/>
+  <path d="M318 154H362" stroke="#FCE7F3" stroke-width="7" stroke-linecap="round"/>
+  <path d="M506 86H546M526 66V106" stroke="#E0E7FF" stroke-width="7" stroke-linecap="round"/>
+  <rect x="146" y="318" width="428" height="42" rx="18" fill="#111827" stroke="#334155"/>
+  <text x="182" y="346" fill="#CBD5E1" font-family="Inter, Arial" font-size="22" font-weight="800">Campaign growth intelligence</text>
+</svg>

@@ -12,17 +12,19 @@ public class DebateEventBus : IDebateEventBus
     {
         var channel = Channel.CreateBounded<DebateStreamEvent>(new BoundedChannelOptions(500)
         {
-            FullMode = BoundedChannelFullMode.Wait,
+            FullMode = BoundedChannelFullMode.DropOldest,
             SingleWriter = false,
             SingleReader = false
         });
         _channels[sessionId] = channel;
     }
 
-    public async Task PublishAsync(Guid sessionId, DebateStreamEvent evt)
+    public Task PublishAsync(Guid sessionId, DebateStreamEvent evt)
     {
         if (_channels.TryGetValue(sessionId, out var channel))
-            await channel.Writer.WriteAsync(evt);
+            channel.Writer.TryWrite(evt);
+
+        return Task.CompletedTask;
     }
 
     public async IAsyncEnumerable<DebateStreamEvent> SubscribeAsync(
