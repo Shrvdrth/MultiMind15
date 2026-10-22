@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
+import { DEMO_URL, parseLimit } from "../api/limits";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
+  /** Set when the daily limit was hit: the bubble shows a link to the static demo. */
+  demoLink?: boolean;
 }
 
 const SUGGESTED = [
@@ -63,6 +66,20 @@ export default function ChatbotWidget() {
         body: JSON.stringify({ message: msg, history }),
         signal: abortRef.current.signal,
       });
+
+      if (res.status === 429) {
+        const limit = parseLimit(429, await res.json().catch(() => null));
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: limit?.message ?? "The free daily limit has been reached.",
+            demoLink: limit?.scope !== "rate",
+          };
+          return updated;
+        });
+        return;
+      }
 
       if (!res.ok || !res.body) throw new Error("Request failed");
 
@@ -332,7 +349,18 @@ export default function ChatbotWidget() {
                   border: m.role === "assistant" ? "1px solid #252a3d" : "none",
                   position: "relative",
                 }}
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }}
+                {...(m.demoLink
+                  ? {
+                      children: (
+                        <>
+                          {m.content}{" "}
+                          <a href={DEMO_URL} target="_blank" rel="noopener noreferrer" style={{ color: "#a5a0ff" }}>
+                            Watch the MultiMind demo →
+                          </a>
+                        </>
+                      ),
+                    }
+                  : { dangerouslySetInnerHTML: { __html: renderMarkdown(m.content) } })}
               />
               {m.streaming && (
                 <span

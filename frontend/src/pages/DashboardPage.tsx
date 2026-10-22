@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { startDebate, getHistory, getStats, toggleFavourite } from '../api/debate';
+import { DEMO_URL, parseLimit } from '../api/limits';
 import type { DebateStats, HistoryItem } from '../api/debate';
 import { useAuth } from '../context/AuthContext';
 
@@ -42,6 +43,8 @@ export default function DashboardPage() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // True when the free daily debate limit was hit — shows a link to the static demo.
+  const [limitHit, setLimitHit] = useState(false);
   const [stats, setStats] = useState<DebateStats | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
@@ -57,6 +60,7 @@ export default function DashboardPage() {
     if (submittingRef.current) return;
     setError('');
 
+    setLimitHit(false);
     if (!prompt.trim()) {
       setError('Please enter a decision or question.');
       return;
@@ -75,8 +79,10 @@ export default function DashboardPage() {
         // Navigate immediately — session page polls for results
         navigate(`/session/${res.data.sessionId}`);
       } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-        setError(msg || 'Failed to start debate. Please try again.');
+        const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+        const limit = parseLimit(response?.status, response?.data);
+        setLimitHit(limit !== null && limit.scope !== 'rate');
+        setError(limit?.message || response?.data?.message || 'Failed to start debate. Please try again.');
       } finally {
         setLoading(false);
         submittingRef.current = false;
@@ -168,7 +174,14 @@ export default function DashboardPage() {
               </div>
               <div className="char-count">{prompt.length} / {MAX_LENGTH}</div>
             </div>
-            {error && <p className="error">⚠ {error}</p>}
+            {error && (
+              <p className="error">
+                ⚠ {error}
+                {limitHit && (
+                  <> In the meantime, <a href={DEMO_URL} target="_blank" rel="noopener noreferrer">watch the MultiMind demo →</a></>
+                )}
+              </p>
+            )}
             <button type="submit" disabled={loading || !prompt.trim()} className="btn-primary">
               {loading ? 'Starting debate...' : '▶  Start Debate'}
             </button>
