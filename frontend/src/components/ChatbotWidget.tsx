@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { DEMO_URL, parseLimit } from "../api/limits";
+import { API_BASE_URL } from "../api/config";
 
 interface Message {
   role: "user" | "assistant";
@@ -16,7 +17,7 @@ const SUGGESTED = [
   "What is the confidence score?",
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5125/api";
+const API_BASE = API_BASE_URL;
 
 export default function ChatbotWidget() {
   const [open, setOpen] = useState(false);
