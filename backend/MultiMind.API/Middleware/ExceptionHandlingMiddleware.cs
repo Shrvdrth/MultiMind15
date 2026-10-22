@@ -22,6 +22,12 @@ public class ExceptionHandlingMiddleware
         {
             await _next(context);
         }
+        catch (UsageLimitExceededException ex)
+        {
+            // Expected when the free daily quota runs out — not an error.
+            _logger.LogInformation("Usage limit ({Scope}) reached for {Path}", ex.Scope, context.Request.Path);
+            await WriteUsageLimitAsync(context, ex);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception for {Method} {Path}",
@@ -47,6 +53,26 @@ public class ExceptionHandlingMiddleware
 
             await HandleExceptionAsync(context, ex);
         }
+    }
+
+    /// <summary>
+    /// Writes a 429 response the frontend recognises by <c>code = "usage_limit"</c>.
+    /// </summary>
+    public static async Task WriteUsageLimitAsync(HttpContext context, UsageLimitExceededException ex)
+    {
+        var retrySeconds = (int)Math.Ceiling(ex.RetryAfter.TotalSeconds);
+        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.Response.ContentType = "application/json";
+        context.Response.Headers.RetryAfter = retrySeconds.ToString();
+
+        var json = JsonSerializer.Serialize(new
+        {
+            code = "usage_limit",
+            scope = ex.Scope,
+            message = ex.Message,
+            retryAfterSeconds = retrySeconds
+        });
+        await context.Response.WriteAsync(json);
     }
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)

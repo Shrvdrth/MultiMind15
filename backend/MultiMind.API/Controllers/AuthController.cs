@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using MultiMind.API.Data;
 using MultiMind.API.DTOs;
@@ -8,6 +9,7 @@ namespace MultiMind.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -25,6 +27,7 @@ public class AuthController : ControllerBase
         "Self-service password reset isn't available. Please ask the site admin to reset your password.";
 
     [HttpPost("register")]
+    [EnableRateLimiting("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
@@ -131,6 +134,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
+    [DisableRateLimiting]
     public async Task<IActionResult> Logout([FromBody] RevokeRequest request)
     {
         if (!string.IsNullOrWhiteSpace(request.RefreshToken))

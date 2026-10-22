@@ -1,4 +1,8 @@
 using System.Text;
+using System.Text.Json;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -71,6 +75,48 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials();
     });
+});
+
+// ── Usage limits (protect the OpenRouter free quota) ──
+// Daily, database-backed limits on debates and chatbot messages. Override with
+// e.g. UsageLimits__DebatesPerUserPerDay=2, UsageLimits__DebatesPerSitePerDay=6.
+builder.Services.AddSingleton(
+    builder.Configuration.GetSection("UsageLimits").Get<UsageLimitOptions>() ?? new UsageLimitOptions());
+builder.Services.AddScoped<IUsageLimitService, UsageLimitService>();
+
+// Short-term, per-IP limits on sign-in endpoints, so nobody can create lots of
+// accounts to get around the per-user limits. In memory: resets on restart.
+builder.Services.AddRateLimiter(options =>
+{
+    static string ClientIp(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    options.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientIp(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.AddPolicy("register", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientIp(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1), QueueLimit = 0 }));
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, ct) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retry))
+            context.HttpContext.Response.Headers.RetryAfter = ((int)retry.TotalSeconds).ToString();
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
+            code = "rate_limited",
+            message = "Too many attempts. Please wait a few minutes and try again."
+        }), ct);
+    };
+});
+
+// Render (and nginx in docker-compose) sit in front of the app. Take the client IP
+// from the last X-Forwarded-For entry, which the proxy adds and visitors can't fake.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 // ── Application Services ──
@@ -172,11 +218,13 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 // Health check for Railway / Docker
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));

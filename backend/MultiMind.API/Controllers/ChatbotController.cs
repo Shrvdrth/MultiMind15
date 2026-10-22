@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MultiMind.API.Middleware;
 using MultiMind.API.Services;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
@@ -12,10 +14,12 @@ namespace MultiMind.API.Controllers;
 public class ChatbotController : ControllerBase
 {
     private readonly IChatbotService _chatbot;
+    private readonly IUsageLimitService _usageLimits;
 
-    public ChatbotController(IChatbotService chatbot)
+    public ChatbotController(IChatbotService chatbot, IUsageLimitService usageLimits)
     {
         _chatbot = chatbot;
+        _usageLimits = usageLimits;
     }
 
     public record ChatbotRequest(string Message, List<ChatbotMessage> History);
@@ -30,6 +34,24 @@ public class ChatbotController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Message))
         {
             Response.StatusCode = 400;
+            return;
+        }
+
+        var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(userIdValue, out var userId))
+        {
+            Response.StatusCode = 401;
+            return;
+        }
+
+        // Daily free-tier limit. Must run before the stream starts so we can still send a 429.
+        try
+        {
+            await _usageLimits.RecordChatMessageAsync(userId);
+        }
+        catch (UsageLimitExceededException ex)
+        {
+            await ExceptionHandlingMiddleware.WriteUsageLimitAsync(HttpContext, ex);
             return;
         }
 

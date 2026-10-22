@@ -23,6 +23,11 @@ public class DebateEngine : IDebateEngine
     private readonly IUserInputWaiter _userInputWaiter;
     private readonly IApplicationLogService _appLog;
     private readonly IMemoryCache _cache;
+    private readonly IUsageLimitService? _usageLimits;
+
+    // Held while checking daily limits and creating the session, so two requests
+    // at the same moment can't both slip under the limit (single-instance app).
+    private static readonly SemaphoreSlim CreateLock = new(1, 1);
 
     // Epic 11.4 — Budget: 3 (R1) + 3 (R2) + 1 (moderator) = 7 max AI calls per session
     private const int MaxAiCallsPerSession = 7;
@@ -34,8 +39,10 @@ public class DebateEngine : IDebateEngine
 
     public DebateEngine(IAgentService agentService, IModeratorService moderatorService,
         AppDbContext db, ILogger<DebateEngine> logger, IDebateEventBus eventBus,
-        IUserInputWaiter userInputWaiter, IApplicationLogService appLog, IMemoryCache cache)
+        IUserInputWaiter userInputWaiter, IApplicationLogService appLog, IMemoryCache cache,
+        IUsageLimitService? usageLimits = null)
     {
+        _usageLimits = usageLimits;
         _agentService = agentService;
         _moderatorService = moderatorService;
         _db = db;
@@ -147,8 +154,22 @@ public class DebateEngine : IDebateEngine
             OriginalPrompt = prompt,
             Status = "running"
         };
-        _db.DebateSessions.Add(session);
-        await _db.SaveChangesAsync();
+
+        await CreateLock.WaitAsync();
+        try
+        {
+            // Daily free-tier limits (per user and site-wide). Checked after the
+            // duplicate lookups so re-submitting a running debate isn't blocked.
+            if (_usageLimits != null)
+                await _usageLimits.EnsureDebateAllowedAsync(userId);
+
+            _db.DebateSessions.Add(session);
+            await _db.SaveChangesAsync();
+        }
+        finally
+        {
+            CreateLock.Release();
+        }
 
         // Populate cache so subsequent duplicate requests within 5 min skip the DB
         _cache.Set(cacheKey, session, DedupTtl);
