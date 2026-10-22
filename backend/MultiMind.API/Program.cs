@@ -226,7 +226,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-// Health check for Railway / Docker
+// Health check for Render / Docker (Render health check path: /health)
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 app.MapControllers();
