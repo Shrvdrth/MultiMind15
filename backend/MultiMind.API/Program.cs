@@ -10,6 +10,13 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Port ──
+// Render (and most hosts) tell the app which port to use through PORT.
+// Without it, keep the container default of 8080 (ASPNETCORE_HTTP_PORTS).
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // ── Database ──
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
