@@ -106,6 +106,11 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Warn loudly if a paid model is configured — every visitor's debate would cost credits.
+var configuredModel = app.Configuration["OpenAI:Model"] ?? DeploymentSettings.DefaultFreeModel;
+if (!DeploymentSettings.IsFreeModel(configuredModel))
+    app.Logger.LogWarning("[Startup] OpenAI:Model '{Model}' is not a free model. Debates will use OpenRouter credits.", configuredModel);
+
 // ── Auto-migrate on startup ──
 // Free databases (e.g. Neon) sleep when idle and can refuse the first
 // connection, so retry a few times before giving up.

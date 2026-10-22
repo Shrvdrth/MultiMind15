@@ -8,6 +8,18 @@ namespace MultiMind.API.Services;
 public static class DeploymentSettings
 {
     /// <summary>
+    /// OpenRouter's free router: it only picks free models, so it never spends credits
+    /// and keeps working when an individual free model is retired.
+    /// </summary>
+    public const string DefaultFreeModel = "openrouter/free";
+
+    /// <summary>True for OpenRouter models that cost nothing to call.</summary>
+    public static bool IsFreeModel(string? model) =>
+        !string.IsNullOrWhiteSpace(model) &&
+        (model.EndsWith(":free", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(model, DefaultFreeModel, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
     /// Splits a comma-separated list of frontend URLs into CORS origins.
     /// Trailing slashes are removed because browsers send origins without them.
     /// </summary>
