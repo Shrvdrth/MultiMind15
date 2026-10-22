@@ -122,18 +122,19 @@ if (app.Environment.IsDevelopment())
         logger.LogWarning("[Startup] Marked {Count} stuck 'running' sessions as 'failed'.", stuckSessions.Count);
     }
 
-    // Promote earliest registered user to Admin (idempotent)
-    var admins = db.Users.IgnoreQueryFilters().Where(u => u.Role == "Admin" && !u.IsDeleted).ToList();
-    if (admins.Count == 0)
+    // Promote the user whose email matches Admin:Email (idempotent).
+    // Never promote "the first user" — on a public site that could be anyone.
+    var adminEmail = app.Configuration["Admin:Email"]?.Trim().ToLower();
+    if (!string.IsNullOrEmpty(adminEmail))
     {
-        var first = db.Users.IgnoreQueryFilters().Where(u => !u.IsDeleted)
-            .OrderBy(u => u.CreatedAt).FirstOrDefault();
-        if (first != null)
+        var adminUser = db.Users.IgnoreQueryFilters()
+            .FirstOrDefault(u => u.Email == adminEmail && !u.IsDeleted && u.Role != "Admin");
+        if (adminUser != null)
         {
-            first.Role = "Admin";
+            adminUser.Role = "Admin";
             db.SaveChanges();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("[Startup] Promoted {Email} to Admin.", first.Email);
+            logger.LogInformation("[Startup] Promoted configured admin account to Admin.");
         }
     }
 }
