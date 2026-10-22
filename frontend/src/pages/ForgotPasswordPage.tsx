@@ -5,6 +5,7 @@ import { forgotPassword } from '../api/auth';
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,7 +15,9 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       const res = await forgotPassword(email);
-      setToken(res.data.token);
+      // Production servers don't return a token — show their message instead.
+      if (res.data.token) setToken(res.data.token);
+      else setNotice(res.data.message);
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -47,6 +50,7 @@ export default function ForgotPasswordPage() {
               <h2>Forgot Password</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '1rem' }}>Enter your email to receive a reset token</p>
               {error && <p className="error">⚠ {error}</p>}
+              {notice && <p style={{ fontSize: '0.88rem', marginBottom: '1rem' }}>ℹ️ {notice}</p>}
               <form onSubmit={handleSubmit}>
                 <div className="input-group">
                   <label>Email Address</label>

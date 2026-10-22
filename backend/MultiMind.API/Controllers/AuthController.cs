@@ -12,12 +12,17 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly AppDbContext _db;
+    private readonly IWebHostEnvironment _env;
 
-    public AuthController(IAuthService authService, AppDbContext db)
+    public AuthController(IAuthService authService, AppDbContext db, IWebHostEnvironment env)
     {
         _authService = authService;
         _db = db;
+        _env = env;
     }
+
+    private const string AdminResetMessage =
+        "Self-service password reset isn't available. Please ask the site admin to reset your password.";
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -62,18 +67,22 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Email))
             return BadRequest(new { message = "Email is required." });
 
+        // There is no email service, so the reset code could only be returned in this
+        // response — which would let anyone reset anyone's password. Only do that in
+        // local development. In production, resets go through the admin panel.
+        if (!_env.IsDevelopment())
+            return Ok(new { message = AdminResetMessage });
+
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (user == null)
             // Return success even if not found to avoid user enumeration
             return Ok(new { message = "If that email exists, a reset token has been generated." });
 
-        // Generate a 6-digit token (no email service needed — token returned in response)
         var token = Random.Shared.Next(100000, 999999).ToString();
         user.ResetToken = BCrypt.Net.BCrypt.HashPassword(token);
         user.ResetTokenExpires = DateTime.UtcNow.AddMinutes(15);
         await _db.SaveChangesAsync();
 
-        // In a production app this would be emailed. For now return it directly.
         return Ok(new { token, message = "Reset token generated. Use it within 15 minutes." });
     }
 
