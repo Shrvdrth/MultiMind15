@@ -58,10 +58,9 @@ builder.Services.AddCors(options =>
             "http://localhost:3000",  // Docker Compose
         };
 
-        // Allow Railway / production frontend URL if configured
-        var frontendUrl = builder.Configuration["Frontend:Url"];
-        if (!string.IsNullOrEmpty(frontendUrl))
-            allowedOrigins.Add(frontendUrl);
+        // Production frontend URL(s), comma-separated, e.g.
+        // Frontend__Url=https://multimind.vercel.app,https://my-domain.com
+        allowedOrigins.AddRange(DeploymentSettings.ParseOrigins(builder.Configuration["Frontend:Url"]));
 
         policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
