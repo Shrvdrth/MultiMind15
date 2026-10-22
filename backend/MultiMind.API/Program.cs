@@ -18,8 +18,12 @@ if (!string.IsNullOrWhiteSpace(port))
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // ── Database ──
+// Accepts "Host=...;" or a postgresql:// URL (Neon), from the setting or DATABASE_URL.
+var connectionString = DeploymentSettings.ResolveConnectionString(
+    builder.Configuration.GetConnectionString("DefaultConnection"),
+    Environment.GetEnvironmentVariable("DATABASE_URL"));
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // ── JWT Authentication ──
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -103,10 +107,28 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 // ── Auto-migrate on startup ──
+// Free databases (e.g. Neon) sleep when idle and can refuse the first
+// connection, so retry a few times before giving up.
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    const int maxAttempts = 5;
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 2, 4, 8, 16s
+            logger.LogWarning("[Startup] Database migration attempt {Attempt}/{Max} failed ({Error}). Retrying in {Delay}s.",
+                attempt, maxAttempts, ex.GetType().Name, delay.TotalSeconds);
+            Thread.Sleep(delay);
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
