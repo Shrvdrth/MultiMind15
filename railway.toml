@@ -1,4 +1,0 @@
-# Root railway.toml — not used directly.
-# Each service has its own railway.toml in its directory:
-#   backend/MultiMind.API/railway.toml  → set Root Directory to backend/MultiMind.API
-#   frontend/railway.toml               → set Root Directory to frontend

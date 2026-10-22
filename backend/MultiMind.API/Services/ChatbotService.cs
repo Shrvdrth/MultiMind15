@@ -79,7 +79,7 @@ public class ChatbotService : IChatbotService
     {
         var apiKey = config["OpenAI:ApiKey"]
             ?? throw new InvalidOperationException("OpenAI API key not configured.");
-        var model = config["OpenAI:Model"] ?? "anthropic/claude-sonnet-4-5";
+        var model = config["OpenAI:Model"] ?? DeploymentSettings.DefaultFreeModel;
         var baseUrl = config["OpenAI:BaseUrl"];
 
         var clientOptions = new OpenAIClientOptions { NetworkTimeout = TimeSpan.FromSeconds(60) };

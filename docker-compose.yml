@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     ports:
-      - "5432:5432"
+      - "5433:5432"  # 5433 on the host avoids clashing with a local Postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -28,9 +28,10 @@ services:
       Jwt__Audience: MultiMindUsers
       Jwt__ExpiryMinutes: "60"
       OpenAI__ApiKey: ${OPENAI_API_KEY}
-      OpenAI__Model: ${OPENAI_MODEL:-anthropic/claude-sonnet-4.5}
+      OpenAI__Model: ${OPENAI_MODEL:-openrouter/free}
       OpenAI__BaseUrl: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
       Frontend__Url: http://localhost:3000
+      Admin__Email: ${ADMIN_EMAIL:-}
       ASPNETCORE_ENVIRONMENT: Production
     depends_on:
       db:

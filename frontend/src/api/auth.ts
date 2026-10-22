@@ -22,7 +22,7 @@ export const login = (email: string, password: string) =>
   api.post<AuthResponse>('/auth/login', { email, password });
 
 export const forgotPassword = (email: string) =>
-  api.post<{ token: string; message: string }>('/auth/forgot-password', { email });
+  api.post<{ token?: string; message: string }>('/auth/forgot-password', { email });
 
 export const resetPassword = (email: string, token: string, newPassword: string) =>
   api.post<{ message: string }>('/auth/reset-password', { email, token, newPassword });

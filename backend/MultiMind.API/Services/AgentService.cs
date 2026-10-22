@@ -82,7 +82,7 @@ public class AgentService : IAgentService
     {
         var apiKey = config["OpenAI:ApiKey"]
             ?? throw new InvalidOperationException("OpenAI API key not configured.");
-        var model = config["OpenAI:Model"] ?? "gpt-4o";
+        var model = config["OpenAI:Model"] ?? DeploymentSettings.DefaultFreeModel;
         var baseUrl = config["OpenAI:BaseUrl"];
 
         if (!string.IsNullOrEmpty(baseUrl))

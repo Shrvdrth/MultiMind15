@@ -18,11 +18,24 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _db;
     private readonly IJwtService _jwt;
+    private readonly IConfiguration? _config;
 
-    public AuthService(AppDbContext db, IJwtService jwt)
+    public AuthService(AppDbContext db, IJwtService jwt, IConfiguration? config = null)
     {
         _db = db;
         _jwt = jwt;
+        _config = config;
+    }
+
+    /// <summary>
+    /// True when the email matches the configured Admin:Email (case-insensitive).
+    /// Nobody becomes Admin automatically when it isn't set.
+    /// </summary>
+    public static bool IsConfiguredAdmin(IConfiguration? config, string email)
+    {
+        var adminEmail = config?["Admin:Email"]?.Trim();
+        return !string.IsNullOrEmpty(adminEmail)
+            && string.Equals(adminEmail, email.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -30,14 +43,11 @@ public class AuthService : IAuthService
         if (await _db.Users.AnyAsync(u => u.Email == request.Email.ToLower()))
             throw new InvalidOperationException("Email already registered.");
 
-        // First registered user becomes Admin
-        var isFirstUser = !await _db.Users.IgnoreQueryFilters().AnyAsync();
-
         var user = new User
         {
             Email = request.Email.ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            Role = isFirstUser ? "Admin" : "User"
+            Role = IsConfiguredAdmin(_config, request.Email) ? "Admin" : "User"
         };
 
         _db.Users.Add(user);

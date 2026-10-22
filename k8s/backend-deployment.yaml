@@ -48,7 +48,7 @@ spec:
                   name: multimind-secrets
                   key: openai-api-key
             - name: OpenAI__Model
-              value: anthropic/claude-sonnet-4.5
+              value: openrouter/free
             - name: OpenAI__BaseUrl
               value: https://openrouter.ai/api/v1
             - name: Frontend__Url

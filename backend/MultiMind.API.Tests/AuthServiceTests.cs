@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using MultiMind.API.Data;
 using MultiMind.API.DTOs;
@@ -43,16 +44,32 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task Register_FirstUser_GetsAdminRole()
+    public async Task Register_FirstUser_WithoutAdminEmail_GetsUserRole()
     {
-        using var db = CreateDb(nameof(Register_FirstUser_GetsAdminRole));
+        using var db = CreateDb(nameof(Register_FirstUser_WithoutAdminEmail_GetsUserRole));
         var svc = CreateService(db);
 
         var result = await svc.RegisterAsync(new RegisterRequest("first@example.com", "Password1!"));
 
+        Assert.Equal("User", result.Role);
+    }
+
+    [Fact]
+    public async Task Register_ConfiguredAdminEmail_GetsAdminRole()
+    {
+        using var db = CreateDb(nameof(Register_ConfiguredAdminEmail_GetsAdminRole));
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Admin:Email"] = "Boss@Example.com" })
+            .Build();
+        var jwt = Mock.Of<IJwtService>(j => j.GenerateToken(It.IsAny<User>()) == "fake-jwt-token");
+        var svc = new AuthService(db, jwt, config);
+
+        await svc.RegisterAsync(new RegisterRequest("someone@example.com", "Password1!"));
+        var result = await svc.RegisterAsync(new RegisterRequest("boss@example.com", "Password1!"));
+
         Assert.Equal("Admin", result.Role);
-        var user = await db.Users.IgnoreQueryFilters().FirstAsync();
-        Assert.Equal("Admin", user.Role);
+        var first = await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Email == "someone@example.com");
+        Assert.Equal("User", first.Role);
     }
 
     [Fact]
